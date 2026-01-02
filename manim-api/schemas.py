@@ -1,12 +1,5 @@
-from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, Field
-
-
-class VideoQuality(str, Enum):
-    LOW = "l"
-    MEDIUM = "m"
-    HIGH = "h"
 
 
 class VideoRequest(BaseModel):
@@ -16,9 +9,17 @@ class VideoRequest(BaseModel):
         max_length=2000,
         description="Descrição em linguagem natural do vídeo desejado",
     )
-    quality: VideoQuality = Field(
-        default=VideoQuality.LOW,
-        description="Qualidade do vídeo: l=480p, m=720p, h=1080p",
+    width: int | None = Field(
+        default=None,
+        ge=320,
+        le=3840,
+        description="(Opcional) Largura do vídeo em pixels; padrão 1920",
+    )
+    height: int | None = Field(
+        default=None,
+        ge=320,
+        le=3840,
+        description="(Opcional) Altura do vídeo em pixels; padrão 1080",
     )
 
 

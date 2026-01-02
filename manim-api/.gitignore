@@ -19,3 +19,6 @@ media/
 *.mp4
 *.png
 *.mov
+
+# Cloudflare quick tunnel metadata
+.cloudflare-url.txt
