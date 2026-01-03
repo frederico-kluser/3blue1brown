@@ -1,53 +1,4 @@
-RESOURCE_CONTEXT = """
-- FastAPI backend exposed via /generate-code, /generate-video e /generate-video-file.
-- Executor Manim CE 0.19.0 com PyAV (ffmpeg embutido) e suporte a MathTex/LaTeX completo.
-- Ambiente Python 3.11 isolado, sem acesso à rede/arquivo além do subprocess controlado.
-- Restrições de segurança: bloqueio de imports perigosos, timeout de 120s, cena < 30s.
-- Cloudflare Tunnel script para expor a API publicamente quando necessário.
-"""
-
-DOCS_KNOWLEDGE = """
-### Conhecimento operacional (Manim CE 0.19.0 + pipeline LLM)
-- Fundamentos: cada cena é uma classe `Scene` (ou derivada) com `construct(self)`; métodos essenciais `play`, `wait`, `add`, `remove`, `next_section`. Exemplo base: criar Circle/Square, usar `self.play(Create(...))`, `self.wait()`.
-- Classes de Scene: Scene (2D), ThreeDScene (câmera 3D com `set_camera_orientation`, `begin_ambient_camera_rotation`), MovingCameraScene (frame animável), ZoomedScene (zoom-in), VectorScene (álgebra linear), LinearTransformationScene (transformações). Saber escolher a cena influencia recursos disponíveis.
-- Catálogo de Mobjects:
-  * Formas geométricas: Circle, Dot, Ellipse, Arc, Annulus, Sector, Square, Rectangle, RoundedRectangle, Triangle, Polygon, RegularPolygon, Star.
-  * Linhas e setas: Line, DashedLine, Arrow, Vector, DoubleArrow, Angle, RightAngle.
-  * Texto/LaTeX: Text, Paragraph, MarkupText, Tex, MathTex (sempre raw strings), Title, BulletedList, Code (syntax highlight).
-  * Gráficos/eixos: Axes, ThreeDAxes, NumberPlane, ComplexPlane, PolarPlane, NumberLine, FunctionGraph, ParametricFunction, BarChart; use `axes.plot`, `axes.c2p/p2c`, `get_area`, `get_vertical_line`, `get_axis_labels`.
-  * Objetos 3D: Sphere, Cube, Cylinder, Cone, Torus, Prism, Surface, Arrow3D, Line3D, Dot3D.
-  * Containers/utilidades: VGroup, Group, Brace, BraceBetweenPoints, Table, Matrix, DecimalNumber, Integer, Variable, ValueTracker, SVGMobject, ImageMobject.
-- Animações disponíveis:
-  * Criação: Create, Write, DrawBorderThenFill, Uncreate, Unwrite, AddTextLetterByLetter, ShowIncreasingSubsets, SpiralIn.
-  * Fade: FadeIn/FadeOut/FadeTransform/FadeTransformPieces.
-  * Transformações: Transform, ReplacementTransform, TransformFromCopy, TransformMatchingShapes/Tex, ClockwiseTransform, MoveToTarget, ApplyMethod, Restore.
-  * Movimento: MoveAlongPath, Rotate/Rotating, Homotopy, PhaseFlow.
-  * Indicação: Indicate, Flash, Circumscribe, ShowPassingFlash, FocusOn, Wiggle, ApplyWave.
-  * Crescimento: GrowFromCenter, GrowFromPoint, GrowFromEdge, GrowArrow, SpinInFromNothing.
-  * Agrupadores: AnimationGroup, Succession, LaggedStart, LaggedStartMap.
-  * Utilidades: Wait, UpdateFromFunc/UpdateFromAlphaFunc, ChangeDecimalToValue, ChangingDecimal.
-- Posicionamento e buffers: constantes ORIGIN/UP/DOWN/LEFT/RIGHT, diagonais UL/UR/DL/DR, IN/OUT. Métodos `move_to`, `shift`, `next_to`, `to_edge`, `to_corner`, `align_to`, `arrange`, `arrange_in_grid`. Getters (`get_center`, `get_top`, `get_edge_center`, `get_corner`). Buffers SMALL_BUFF/MED_SMALL_BUFF/MED_LARGE_BUFF/LARGE_BUFF.
-- Sistema de cores: paletas BLUE/RED/GREEN/YELLOW/GOLD/TEAL/PURPLE/MAROON/PINK/ORANGE/LIGHT_BROWN/DARK_BROWN com variantes `_A.._E`, escala de cinza (WHITE → BLACK), cores puras (PURE_RED etc). Usar `set_color`, `set_fill(opacity=)`, `set_stroke(width=)`, `set_color_by_gradient`, `ManimColor.from_hex(hex_str="...")`, `color_gradient`, `interpolate_color`.
-- CLI e configuração: comando `manim render` com flags de qualidade `-ql/-qm/-qh/-qp/-qk`, `--media_dir`, `--format`, `-t/--transparent`, `-s` (last frame), `--fps`, `--resolution`, `--disable_caching`, `--renderer [cairo|opengl]`. `manim.cfg` suporta `quality`, `frame_rate`, `output_file`, `media_dir`, `background_color`, `pixel_width/height`, `preview`, `verbosity`.
-- Transparência: usar `-t` (gera .mov por padrão) ou `--transparent --format=webm`; PNG salva último frame com alpha.
-- Changelog 0.19.0: substituição do FFmpeg externo por PyAV (instalação simplificada). Novidades (HSV colors, animações de digitação, argumento `colorscale` em `plot`, shorthand `@` para `coords_to_point`, log no `checkhealth`, suporte Python 3.13). Breaking changes: parâmetros obrigatoriamente nomeados (`SurroundingRectangle(..., color=RED, buff=0.3)`), `ManimColor.from_hex(hex_str=...)`, `Scene.next_section(section_type=...)`, `Axes(x_range=[min,max,step])`, evitar GraphScene/TexMobject/TextMobject/config dict.
-- Tipos de vídeo alvo: álgebra, cálculo, geometria, trigonometria, álgebra linear, teoria dos números, algoritmos, estruturas de dados, ML, física, visualização de dados, animações de branding e storytelling.
-- Prompt engineering e melhores práticas:
-  * Sempre reforçar uso de Manim CE (não ManimGL), import `from manim import *`, Scenes em PascalCase com `construct` bem definido.
-  * Diferenciar Manim CE vs GL (CLI `manim`, uso de `x_range`, `hex_str`, etc.).
-  * Few-shot ideal: 3 exemplos cobrindo animações distintas.
-  * Parâmetros LLM recomendados: temperature 0.0–0.3, top_p 0.9–0.95, max_tokens 4000–8000.
-  * Erros comuns a evitar: imports errados, MathTex sem raw string, `Axes` com sintaxe antiga, `hex=` ao invés de `hex_str=`, objetos sobrepostos sem posicionamento.
-  * Templates úteis: explicações matemáticas (fórmula → decomposição → destaque final) e visualizações de algoritmos (estrutura de dados, estados, contador de passos, resultado final).
-  * Checklist pré-render: import correto, classe Scene válida, `construct`, LaTeX válido, posicionamento explícito, `self.wait()`, parâmetros atuais.
-- Limitações/performance: sem render realtime (usar `-ql` p/ dev), interatividade limitada (considerar Motion Canvas), 3D pesado (usar `--renderer=opengl`), dividir cenas longas, remover objetos com FadeOut/remove, usar `always_redraw` com parcimônia, preferir Text para textos comuns, ValueTracker + add_updater para dinamismo leve. Alternativas: Motion Canvas/Remotion para interatividade, Blender para fotorrealismo/física pesada, p5.js/Three.js para web.
-- Recursos comunitários: Discord oficial (manim), Reddit r/manim, Stack Overflow tag manim, GitHub Discussions. Repositórios chave (ManimCommunity/manim, 3b1b/manim, 3b1b/videos, awesome-manim, ManimML, manim-slides). Plugins relevantes: manim-voiceover, manim-slides, ManimML, manim-physics, Chanim. Playground online try.manim.community.
-- Exemplos úteis: TransformMatchingTex para derivação, RiemannSum com `get_riemann_rectangles`, ThreeDScene com `set_camera_orientation`, ValueTracker + always_redraw para gráficos dinâmicos, MovingCameraScene com zoom/follow, Graph visualizations, animações de texto com `Write` e `Indicate`.
-- Limitações visuais/tecnológicas: sem partículas nativas ou iluminação avançada; física manual; considerar plugins/blender quando necessário.
-- Pipeline LLM recomendado no guia: duas etapas (gerar prompt enriquecido + gerar código), reforçar `self.play` + `self.wait`, limpeza de cena, uso de `run_time`, e validações AST.
-"""
-
-GUIDE_DEFINITIVO = """```# Guia Definitivo: Manim Community Edition 0.19.0 + GPT-4o-mini
+```# Guia Definitivo: Manim Community Edition 0.19.0 + GPT-4o-mini
 
 **Geração de vídeos animados educacionais via LLM** — um manual completo cobrindo todas as possibilidades, configurações, melhores práticas e integração com modelos de linguagem.
 
@@ -734,138 +685,557 @@ POSICIONAMENTO:
 | Custo (output) | $0.60/1M tokens | $10.00/1M tokens |
 | Latência | Menor | Maior |
 | Código complexo | Bom | Excelente |
-.
-.
-.
-```"""
 
-DEFAULT_RESOURCE_NOTES = (
-    "Utilize shapes/animations Manim CE, mantenha duração < 30s, reutilize cores suaves, "
-    "garanta textos sempre em camadas acima de gráficos (use cores contrastantes, background rectangle ou set_z_index) e "
-    "respeite a resolução/orientação descrita no bloco [VIDEO SPECIFICATIONS]."
-)
+#### Quando usar cada modelo
 
-PROMPT_OPTIMIZER_SYSTEM_PROMPT = f"""You are a senior AI engineer. Rewrite and enrich user prompts for a Manim video generator.
+**GPT-4o-mini para:**
+- Animações simples a moderadas
+- Manipulações básicas de formas
+- Visualizações matemáticas padrão
+- Alto volume de geração
+- Iteração e prototipagem
 
-Return ONLY strict JSON with the following shape:
-{{
-  "improved_prompt": "string",
-  "resource_plan": "bullet list describing how to leverage available resources"
-}}
+**GPT-4o para:**
+- Animações multi-cena complexas
+- Simulações físicas avançadas
+- Visualizações de algoritmos novos
+- Cenas 3D com câmera complexa
+- Quando GPT-4o-mini falha após retries
 
-Guidelines:
-1. Preserve the user's intent but clarify missing details (colors, transitions, timing) when reasonable.
-2. Mention any assumptions you add.
-3. Inject the available resources e referências abaixo para que o coder LLM saiba o que existe.
-4. Sempre que receber o bloco [VIDEO SPECIFICATIONS], repita no prompt otimizado a resolução (largura x altura), orientação e instruções de enquadramento para garantir que o coder adapte a cena.
-5. Instrua explicitamente que textos devem ficar em camadas acima de gráficos/imagens, usando cores contrastantes, fundos ou `set_z_index` para evitar objetos se fundindo.
+### Parâmetros recomendados
 
-Available resources:
-{RESOURCE_CONTEXT}
+```python
+temperature = 0.0-0.3  # Menor é melhor para código
+top_p = 0.9-0.95
+max_tokens = 4000-8000  # Ajustar conforme complexidade
+```
 
-Reference knowledge:
-{DOCS_KNOWLEDGE}
+### Erros comuns de LLMs com Manim
 
-## GUIA DEFINITIVO COMPLETO
-{GUIDE_DEFINITIVO}
-"""
+```python
+# ❌ ERRADO - Import ManimGL
+from manimlib import *
 
-MANIM_SYSTEM_PROMPT = f"""You are an expert Manim Community Edition developer. Generate valid, executable Manim code based on user descriptions.
+# ✓ CORRETO - Manim CE
+from manim import *
 
-## CRITICAL RULES:
-1. ALWAYS use `from manim import *` (Community Edition syntax)
-2. Create a SINGLE Scene class with a descriptive PascalCase name
-3. Implement the `construct(self)` method with all animations
-4. Use `self.play()` for EVERY animation
-5. ALWAYS end with `self.wait()` or `self.wait(1)` for proper video ending
-6. Keep total animation duration under 30 seconds
-7. Use smooth, professional animation timings (run_time=1 to 2 seconds)
-8. Leia o bloco [VIDEO SPECIFICATIONS] e distribua objetos respeitando a resolução/ orientação indicada (o render final usará esses valores).
-9. Evite que texto e gráficos se fundam: mantenha textos acima (use `set_z_index`, `add_background_rectangle`/`background_stroke`, cores contrastantes) e garanta que efeitos não passem por cima do texto.
+# ❌ ERRADO - Missing raw string
+tex = MathTex("\\frac{1}{2}")
 
-## CODE TEMPLATE:
+# ✓ CORRETO - Raw string
+tex = MathTex(r"\frac{1}{2}")
+
+# ❌ ERRADO - Sintaxe antiga de Axes
+axes = Axes(x_min=-3, x_max=3)
+
+# ✓ CORRETO - Manim CE
+axes = Axes(x_range=[-3, 3, 1])
+
+# ❌ ERRADO - Parâmetro antigo
+ManimColor.from_hex(hex="#FF0000")
+
+# ✓ CORRETO (0.19.0+)
+ManimColor.from_hex(hex_str="#FF0000")
+
+# ❌ ERRADO - Objetos sobrepostos
+text1 = Text("Hello")
+text2 = Text("World")
+self.add(text1, text2)
+
+# ✓ CORRETO - Posicionamento explícito
+text1 = Text("Hello").shift(UP)
+text2 = Text("World").shift(DOWN)
+self.add(text1, text2)
+```
+
+### Templates de prompt por tipo
+
+#### Explicações matemáticas
+```
+Crie uma animação Manim CE explicando [CONCEITO].
+
+Requisitos:
+- Comece com a fórmula/equação principal usando MathTex
+- Decomponha cada componente com destaques visuais
+- Mostre derivação ou transformação passo a passo
+- Use cores para distinguir partes diferentes
+- Inclua labels e anotações
+- Termine com resultado final proeminente
+```
+
+#### Visualizações de algoritmos
+```
+Crie uma animação Manim CE visualizando o algoritmo [ALGORITMO].
+
+Requisitos:
+- Mostre estrutura de dados claramente
+- Destaque elementos sendo comparados/trocados
+- Exiba informação de estado atual (índices, valores)
+- Use cores distintas para estados diferentes
+- Inclua contador de passos ou iteração
+- Mostre resultado final processado
+```
+
+### Validação e correção de erros
+
+**Checklist pré-render:**
+1. Verificar `from manim import *`
+2. Confirmar herança correta de `Scene`
+3. Verificar método `def construct(self):`
+4. Checar sintaxe LaTeX (raw strings, chaves balanceadas)
+5. Verificar posicionamento de objetos
+6. Confirmar sequências `play()` e `wait()`
+
+**Prompt de correção iterativa:**
+```
+O seguinte código Manim produziu erro:
+
+```python
+[CÓDIGO]
+```
+
+Mensagem de erro:
+[ERRO]
+
+Corrija o código focando em:
+1. Import statements corretos para Manim CE
+2. Sintaxe LaTeX correta (raw strings, chaves balanceadas)
+3. Chamadas de método válidas para versão atual
+4. Nomes de parâmetros corretos
+
+Forneça apenas o código corrigido.
+```
+
+### Projetos existentes de LLM + Manim
+
+- **Generative Manim** (github.com/marcelo-earth/generative-manim) - GPT-4o powered, 709+ stars
+- **manim-generator** (github.com/makefinks/manim-generator) - Feedback loop code-writer/reviewer
+- **Manimator** (arxiv.org/abs/2507.14306) - Pipeline acadêmico de duas etapas
+- **Bespoke-Manim** (Hugging Face) - 1,000 scripts de animação matemática
+
+---
+
+## 10. Exemplos de código por categoria
+
+### Transformação de equações
+
 ```python
 from manim import *
 
-class SceneName(Scene):
+class EquationDerivation(Scene):
     def construct(self):
-        # Create objects
-        # Animate with self.play()
+        eq1 = MathTex("{{x}}^2", "+", "{{y}}^2", "=", "{{z}}^2")
+        eq2 = MathTex("{{a}}^2", "+", "{{b}}^2", "=", "{{c}}^2")
+        eq3 = MathTex("{{a}}^2", "=", "{{c}}^2", "-", "{{b}}^2")
+        
+        self.add(eq1)
+        self.wait(0.5)
+        self.play(TransformMatchingTex(eq1, eq2))
+        self.wait(0.5)
+        self.play(TransformMatchingTex(eq2, eq3))
         self.wait()
 ```
 
-## AVAILABLE MOBJECTS:
-- Shapes: Circle, Square, Rectangle, Triangle, Polygon, Line, Arrow, Dot, Arc
-- Text: Text("text"), MathTex("LaTeX"), Tex("LaTeX text")
-- Groups: VGroup, Group
-- Graphs: Axes, NumberPlane, FunctionGraph
-- Colors: RED, BLUE, GREEN, YELLOW, WHITE, PURPLE, ORANGE, PINK, TEAL, GRAY_B (use only official Manim color constants—avoid variants like `GRAY_B0`—or fall back to `ManimColor.from_hex`).
+### Integral de Riemann
 
-## KEY ANIMATIONS:
-- Create(mobject) - draws progressively
-- Write(text) - writing animation for text
-- FadeIn(mobject), FadeOut(mobject)
-- Transform(source, target), ReplacementTransform(source, target)
-- mobject.animate.method() - animate any property change
-- Rotate(mobject, angle=PI), Scale(mobject, factor)
-- GrowFromCenter(mobject)
+```python
+from manim import *
 
-## POSITIONING:
-- .to_edge(UP/DOWN/LEFT/RIGHT)
-- .shift(LEFT * 2), .shift(RIGHT * 3 + UP * 1)
-- .move_to(ORIGIN), .next_to(other, RIGHT)
-- Constants: UP, DOWN, LEFT, RIGHT, ORIGIN, UL, UR, DL, DR
+class RiemannSum(Scene):
+    def construct(self):
+        ax = Axes(x_range=[0, 5], y_range=[0, 6], tips=False)
+        curve = ax.plot(lambda x: 4*x - x**2, x_range=[0, 4], color=BLUE_C)
+        
+        # Retângulos de Riemann
+        area = ax.get_riemann_rectangles(
+            curve, x_range=[0.3, 3.7], dx=0.3,
+            color=BLUE, fill_opacity=0.5
+        )
+        
+        self.play(Create(ax))
+        self.play(Create(curve))
+        self.play(Create(area))
+        self.wait()
+```
 
-## OUTPUT FORMAT:
-Return ONLY the Python code wrapped in ```python ``` markers.
-NO explanations before or after the code.
+### Cena 3D com rotação de câmera
 
-## DOCS.MD QUICK REFERENCE
-{DOCS_KNOWLEDGE}
+```python
+from manim import *
 
-## GUIA DEFINITIVO COMPLETO
-{GUIDE_DEFINITIVO}
-"""
+class ThreeDRotation(ThreeDScene):
+    def construct(self):
+        axes = ThreeDAxes()
+        esfera = Sphere(radius=1, resolution=(20, 20))
+        esfera.set_color(BLUE)
+        
+        self.set_camera_orientation(phi=75*DEGREES, theta=30*DEGREES)
+        self.play(Create(axes), Create(esfera))
+        self.begin_ambient_camera_rotation(rate=0.2)
+        self.wait(5)
+        self.stop_ambient_camera_rotation()
+        self.move_camera(phi=45*DEGREES, theta=-45*DEGREES)
+        self.wait()
+```
 
-FEW_SHOT_EXAMPLES = [
-    {
-        "user": "Create a blue circle that grows and then moves to the right",
-        "assistant": """```python\nfrom manim import *\n\nclass BlueCircleAnimation(Scene):\n    def construct(self):\n        circle = Circle(color=BLUE, fill_opacity=0.7)\n        self.play(GrowFromCenter(circle), run_time=1)\n        self.play(circle.animate.shift(RIGHT * 3), run_time=1.5)\n        self.wait()\n```""",
-    },
-    {
-        "user": "Show the equation E=mc² appearing letter by letter",
-        "assistant": """```python\nfrom manim import *\n\nclass EinsteinEquation(Scene):\n    def construct(self):\n        equation = MathTex("E", "=", "m", "c^2")\n        equation.scale(2)\n\n        self.play(Write(equation[0]), run_time=0.5)\n        self.play(Write(equation[1]), run_time=0.3)\n        self.play(Write(equation[2]), run_time=0.5)\n        self.play(Write(equation[3]), run_time=0.7)\n\n        self.play(equation.animate.set_color(YELLOW), run_time=0.5)\n        self.wait()\n```""",
-    },
-    {
-        "user": "Transform a red square into a green triangle",
-        "assistant": """```python\nfrom manim import *\n\nclass SquareToTriangle(Scene):\n    def construct(self):\n        square = Square(color=RED, fill_opacity=0.8)\n        triangle = Triangle(color=GREEN, fill_opacity=0.8)\n\n        self.play(Create(square), run_time=1)\n        self.wait(0.5)\n        self.play(Transform(square, triangle), run_time=1.5)\n        self.wait()\n```""",
-    },
-]
+### ValueTracker dinâmico
 
+```python
+from manim import *
 
-def build_prompt_optimizer_messages(user_prompt: str, video_spec: str | None = None) -> list:
-    content = user_prompt if not video_spec else f"{user_prompt}\n\n{video_spec}"
-    return [
-        {"role": "system", "content": PROMPT_OPTIMIZER_SYSTEM_PROMPT},
-        {"role": "user", "content": content},
-    ]
+class DynamicGraph(Scene):
+    def construct(self):
+        ax = Axes(x_range=[0, 10], y_range=[0, 100, 10])
+        labels = ax.get_axis_labels(x_label="x", y_label="f(x)")
+        
+        tracker = ValueTracker(0)
+        
+        def func(x):
+            return 2 * (x - 5) ** 2
+        
+        graph = ax.plot(func, color=MAROON)
+        dot = always_redraw(
+            lambda: Dot(ax.c2p(tracker.get_value(), func(tracker.get_value())))
+        )
+        
+        self.add(ax, labels, graph, dot)
+        self.play(tracker.animate.set_value(5), run_time=3)
+        self.play(tracker.animate.set_value(10), run_time=3)
+        self.wait()
+```
 
+### MovingCameraScene
 
-def build_code_generation_messages(
-    improved_prompt: str,
-    resource_notes: str | None = None,
-    video_spec: str | None = None,
-) -> list:
-    enriched_system = MANIM_SYSTEM_PROMPT + "\n\n# AVAILABLE RESOURCES\n" + RESOURCE_CONTEXT
-    if resource_notes:
-        enriched_system += "\n\n# PROMPT OPTIMIZER NOTES\n" + resource_notes
+```python
+from manim import *
 
-    messages = [{"role": "system", "content": enriched_system}]
+class CameraFollow(MovingCameraScene):
+    def construct(self):
+        self.camera.frame.save_state()
+        
+        ax = Axes(x_range=[-1, 10], y_range=[-1, 10])
+        graph = ax.plot(lambda x: np.sin(x), color=WHITE, x_range=[0, 3*PI])
+        
+        dot_start = Dot(ax.i2gp(graph.t_min, graph))
+        dot_end = Dot(ax.i2gp(graph.t_max, graph))
+        
+        self.add(ax, graph, dot_start, dot_end)
+        self.play(self.camera.frame.animate.scale(0.5).move_to(dot_start))
+        self.wait(0.5)
+        self.play(self.camera.frame.animate.move_to(dot_end), run_time=3)
+        self.wait(0.5)
+        self.play(Restore(self.camera.frame))
+        self.wait()
+```
 
-    for example in FEW_SHOT_EXAMPLES:
-        messages.append({"role": "user", "content": example["user"]})
-        messages.append({"role": "assistant", "content": example["assistant"]})
+### Visualização de grafo
 
-    user_payload = improved_prompt if not video_spec else f"{improved_prompt}\n\n{video_spec}"
-    messages.append({"role": "user", "content": user_payload})
-    return messages
+```python
+from manim import *
+
+class GraphVisualization(Scene):
+    def construct(self):
+        vertices = [1, 2, 3, 4, 5, 6, 7, 8]
+        edges = [(1, 7), (1, 8), (2, 3), (2, 4), (2, 5), (2, 8), (3, 4)]
+        
+        g = Graph(vertices, edges, layout="spring")
+        
+        self.play(Create(g))
+        self.wait(0.5)
+        self.play(
+            g[1].animate.move_to([1, 1, 0]),
+            g[2].animate.move_to([-1, 1, 0])
+        )
+        self.wait()
+```
+
+### Animação de texto
+
+```python
+from manim import *
+
+class TextAnimation(Scene):
+    def construct(self):
+        title = Text("Manim CE 0.19.0", font_size=72)
+        subtitle = Text("Animações Matemáticas", font_size=36)
+        equation = MathTex(r"e^{i\pi} + 1 = 0")
+        
+        VGroup(title, subtitle, equation).arrange(DOWN, buff=0.5)
+        
+        self.play(Write(title))
+        self.play(FadeIn(subtitle, shift=UP))
+        self.play(Write(equation))
+        self.wait()
+        
+        self.play(Indicate(equation))
+        self.wait()
+```
+
+---
+
+## 11. Limitações e workarounds
+
+### Limitações técnicas
+
+| Limitação | Descrição | Workaround |
+|-----------|-----------|------------|
+| Sem renderização real-time | Vídeos devem ser totalmente renderizados | Use `-ql` para desenvolvimento |
+| Interatividade limitada | Outputs são arquivos de vídeo | Considere Motion Canvas para interatividade |
+| Performance com muitos objetos | Renderização fica lenta | Agrupe com VGroup, remova objetos não usados |
+| Constraints de memória | Cenas complexas podem exceder RAM | Quebre em múltiplas cenas |
+| Tempo de render | Cenas 3D complexas demoram | Use `--renderer=opengl` para 3D |
+
+### Limitações visuais
+
+| Limitação | Descrição | Alternativa |
+|-----------|-----------|-------------|
+| Sem renderização fotorrealista | Projetado para gráficos vetoriais | Use Blender para raytracing |
+| Iluminação 3D limitada | Modelo de luz básico, sem sombras | Blender para lighting avançado |
+| Sem engine de física | Física deve ser codificada manualmente | manim-physics plugin ou Blender |
+| Sistema de partículas limitado | Sem partículas nativas | Implementar manualmente |
+
+### Workarounds de performance
+
+```python
+# 1. Quebrar cenas em partes
+class Part1(Scene):
+    def construct(self):
+        # Primeira metade
+        pass
+
+class Part2(Scene):
+    def construct(self):
+        # Segunda metade
+        pass
+
+# 2. Usar qualidade baixa no desenvolvimento
+# manim -pql scene.py MinhaScene
+
+# 3. Desabilitar cache para problemas com TracedPath
+# manim --disable_caching scene.py MinhaScene
+
+# 4. Renderizar animações específicas
+# manim -n 5,10 scene.py MinhaScene
+
+# 5. Usar Text ao invés de Tex quando possível (mais rápido)
+Text("Hello World")  # Rápido
+Tex("Hello World")   # Requer LaTeX, mais lento
+```
+
+### Gerenciamento de memória
+
+```python
+# Remover objetos quando não necessários
+self.play(FadeOut(old_object))
+self.remove(old_object)
+
+# Usar always_redraw com cuidado
+# Cria novo objeto a cada frame - usar esparçamente
+number = always_redraw(lambda: DecimalNumber(tracker.get_value()))
+
+# Melhor para objetos complexos: usar add_updater
+number = DecimalNumber(0)
+number.add_updater(lambda m: m.set_value(tracker.get_value()))
+```
+
+### Quando usar alternativas
+
+| Necessidade | Ferramenta |
+|-------------|------------|
+| Vídeos de educação matemática | **Manim** ✓ |
+| Preview real-time | Motion Canvas |
+| Integração React | Remotion |
+| 3D fotorrealista | Blender |
+| App web interativo | p5.js / Three.js |
+| Protótipo rápido | p5.js |
+| Física complexa | Blender |
+| Equações LaTeX | **Manim** ✓ |
+
+---
+
+## 12. Recursos da comunidade
+
+### Canais oficiais
+
+- **Discord**: Hub principal da comunidade (discord.gg/manim)
+- **Reddit**: r/manim - compartilhamento de projetos e perguntas
+- **Stack Overflow**: Tag `manim` para Q&A
+- **GitHub Discussions**: Para propostas e perguntas técnicas
+
+### Repositórios essenciais
+
+| Repositório | Descrição | Stars |
+|-------------|-----------|-------|
+| ManimCommunity/manim | Repositório principal | 31.9k |
+| 3b1b/manim | ManimGL original | 82.5k |
+| 3b1b/videos | Código de todos os vídeos 3B1B | — |
+| ManimCommunity/awesome-manim | Lista de criadores usando Manim | — |
+| helblazer811/ManimML | Visualizações de ML | — |
+| jeertmans/manim-slides | Apresentações com Manim | — |
+
+### Plugins populares
+
+| Plugin | Propósito | Install |
+|--------|-----------|---------|
+| manim-voiceover | Narração em Python | `pip install manim-voiceover` |
+| manim-slides | Apresentações PowerPoint-like | `pip install manim-slides` |
+| ManimML | Visualizações de ML | `pip install manim-ml` |
+| manim-physics | Simulações físicas | — |
+| Chanim | Química | — |
+
+### Playground interativo
+
+- **https://try.manim.community** - Jupyter notebook online, sem instalação
+
+### Tutoriais recomendados
+
+- Quickstart oficial: docs.manim.community/tutorials/quickstart.html
+- Building Blocks: docs.manim.community/tutorials/building_blocks.html
+- manimclass.com - Tutoriais step-by-step gratuitos
+
+---
+
+## 13. Referência rápida e cheatsheets
+
+### Comandos CLI essenciais
+
+```bash
+# Render com preview
+manim -pql scene.py MinhaScene
+
+# Alta qualidade final
+manim -qh scene.py MinhaScene
+
+# GIF output
+manim --format=gif -ql scene.py MinhaScene
+
+# Background transparente
+manim -t scene.py MinhaScene
+
+# Verificar instalação
+manim checkhealth
+
+# Inicializar projeto
+manim init
+```
+
+### Estrutura básica de código
+
+```python
+from manim import *
+
+class MinhaScene(Scene):
+    def construct(self):
+        # Criar objetos
+        obj = Circle()
+        
+        # Animar
+        self.play(Create(obj))
+        self.wait()
+```
+
+### Constantes de buffer
+
+```python
+SMALL_BUFF = 0.1
+MED_SMALL_BUFF = 0.25
+MED_LARGE_BUFF = 0.5
+LARGE_BUFF = 1
+
+# Uso
+obj.next_to(outro, RIGHT, buff=MED_SMALL_BUFF)
+```
+
+### Constantes matemáticas
+
+```python
+PI = np.pi
+TAU = 2 * np.pi
+DEGREES = PI / 180
+
+# Uso
+self.play(Rotate(obj, PI/2))
+self.play(Rotate(obj, 90*DEGREES))
+```
+
+### Dimensões do frame
+
+```python
+config.frame_height = 8.0      # Altura lógica
+config.frame_width = 14.22...  # Largura lógica (16:9)
+config.pixel_height = 1080
+config.pixel_width = 1920
+```
+
+### Animações mais usadas
+
+```python
+# Criação
+self.play(Create(obj))
+self.play(Write(texto))
+self.play(FadeIn(obj))
+self.play(GrowFromCenter(obj))
+
+# Transformação
+self.play(Transform(a, b))
+self.play(ReplacementTransform(a, b))
+self.play(TransformMatchingTex(eq1, eq2))
+
+# Movimento
+self.play(obj.animate.shift(UP * 2))
+self.play(obj.animate.move_to(ORIGIN))
+self.play(obj.animate.scale(2))
+self.play(Rotate(obj, PI/2))
+
+# Indicação
+self.play(Indicate(obj))
+self.play(Circumscribe(obj))
+self.play(Flash(obj.get_center()))
+
+# Saída
+self.play(FadeOut(obj))
+self.play(Uncreate(obj))
+```
+
+### Configuração programática
+
+```python
+from manim import config
+
+# Qualidade
+config.pixel_width = 1920
+config.pixel_height = 1080
+config.frame_rate = 60
+
+# Background
+config.background_color = WHITE
+
+# Transparência
+config.transparent = True
+config.format = "webm"
+
+# Cache
+config.disable_caching = True
+```
+
+### Checklist pré-geração para LLMs
+
+1. ✅ Import: `from manim import *`
+2. ✅ Herança: `class X(Scene):`
+3. ✅ Método: `def construct(self):`
+4. ✅ Raw strings para LaTeX: `MathTex(r"...")`
+5. ✅ Posicionamento explícito de objetos
+6. ✅ Chamadas `self.wait()` para ritmo
+7. ✅ Parâmetros keyword para SurroundingRectangle
+8. ✅ `hex_str=` ao invés de `hex=` para cores
+
+---
+
+## Conclusão
+
+Este guia cobre o ecossistema completo do **Manim Community Edition 0.19.0** e sua integração com **GPT-4o-mini** para geração automatizada de código. As principais conclusões são:
+
+A versão 0.19.0 simplifica drasticamente a instalação ao substituir ffmpeg por PyAV, tornando o Manim mais acessível. Para geração de código via LLM, GPT-4o-mini oferece excelente custo-benefício para animações simples a moderadas, enquanto GPT-4o é preferível para cenários complexos. O segredo está em system prompts bem estruturados que especificam claramente a versão do Manim CE, evitam confusão com ManimGL, e incluem few-shot examples de qualidade.
+
+Os erros mais comuns podem ser prevenidos enfatizando raw strings para LaTeX, usando `x_range` ao invés de `x_min/x_max`, e especificando posicionamento explícito de objetos. Com estas práticas, a combinação Manim + LLM permite criar conteúdo educacional animado de alta qualidade de forma eficiente e escalável.
+```
