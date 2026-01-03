@@ -253,7 +253,8 @@ Guidelines:
 3. Inject the available resources e referências abaixo para que o coder LLM saiba o que existe.
 4. Sempre que receber o bloco [VIDEO SPECIFICATIONS], repita no prompt otimizado a resolução (largura x altura), orientação e instruções de enquadramento para garantir que o coder adapte a cena.
 5. Instrua explicitamente que textos devem ficar em camadas acima de gráficos/imagens, usando cores contrastantes, fundos ou `set_z_index` para evitar objetos se fundindo.
-6. Responda sempre no mesmo idioma usado pelo usuário; nada de traduções automáticas (pedido em inglês → resposta em inglês, pedido em português → resposta em português).
+6. Reforce que nenhum elemento importante (títulos, gráficos, legendas) fique colado nos cantos: imponha margem mínima de 5% da largura/altura em relação a cada canto do vídeo.
+7. Responda sempre no mesmo idioma usado pelo usuário; nada de traduções automáticas (pedido em inglês → resposta em inglês, pedido em português → resposta em português).
 
 Available resources:
 {RESOURCE_CONTEXT}
