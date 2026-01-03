@@ -11,6 +11,12 @@
 | Boas práticas específicas de OpenGL | Evite mudar shaders/texturas a cada frame, mantenha objetos fora da frustum desativados e use mobjects compatíveis com VBOs. | Aproveita o pipeline GPU ao máximo sem alterar saída final. | Difícil | [6][7] |
 | Workflow incremental + render final | Itere em `-ql/-qm` (preview) e só finalize em `-qh/-qp` com caching ligado; automatize múltiplas cenas num único comando. | Mantém qualidade final mas reduz ciclos de iteração e recompilação de assets. | Fácil | [4] |
 
+## Boas práticas específicas de OpenGL *(atualizado em 2026-01-03T22:23:28.490Z)*
+- **Agrupe draw calls** usando `VGroup`/`Group` ou mobjects compostos para reutilizar buffers e reduzir trocas de shader. *(Fontes: [6][7])*
+- **Evite mudanças frequentes de shader/texture**: mantenha cores/materiais consistentes entre animações sucessivas para diminuir mudanças de estado na GPU sem impacto visual. *(Fontes: [6])*
+- **Desative ou evite adicionar objetos fora do frustum** (por exemplo, ocultando mobjects temporariamente com `set_opacity(0)` ou removendo-os) para que o OpenGL culling ignore geometria invisível. *(Fontes: [7])*
+- **Prefira mobjects compatíveis com VBOs** (`Surface`, `Sphere`, `Mesh` customizado) em vez de SVGs muito detalhados; quando usar SVG, simplifique o vetor antes de importar. *(Fontes: [2][7])*
+
 ## Referências
 1. "OpenGL and Interactivity" – slama.dev, 2025. [https://slama.dev/manim/opengl-and-interactivity/](https://slama.dev/manim/opengl-and-interactivity/)
 2. "OpenGL Rendering" – ManimCommunity/manim (DeepWiki). [https://deepwiki.com/ManimCommunity/manim/5.3-custom-animations-and-mobjects](https://deepwiki.com/ManimCommunity/manim/5.3-custom-animations-and-mobjects)

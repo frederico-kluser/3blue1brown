@@ -26,6 +26,22 @@ def _resolve_texlive_bin() -> Optional[Path]:
 
 TEXLIVE_BIN = _resolve_texlive_bin()
 
+OPENGL_SITE_CUSTOMIZE = """try:
+    from manim.mobject.opengl.opengl_mobject import OpenGLMobject
+except Exception:
+    OpenGLMobject = None
+else:
+    if not hasattr(OpenGLMobject, "set_z_index"):
+        def _set_z_index(self, z_index_value, family=True):
+            if family:
+                for submob in getattr(self, "submobjects", []):
+                    if hasattr(submob, "set_z_index"):
+                        submob.set_z_index(z_index_value, family=family)
+            self.z_index = z_index_value
+            return self
+        OpenGLMobject.set_z_index = _set_z_index
+"""
+
 
 @dataclass
 class RenderResult:
@@ -76,10 +92,17 @@ def execute_manim(
         height,
         timeout,
     )
+    use_opengl_renderer = True
+
     with tempfile.TemporaryDirectory(prefix="manim_") as tmpdir:
         work_dir = Path(tmpdir)
         script_path = work_dir / "scene.py"
         media_dir = work_dir / "media"
+
+        if use_opengl_renderer:
+            sitecustomize_path = work_dir / "sitecustomize.py"
+            sitecustomize_path.write_text(OPENGL_SITE_CUSTOMIZE)
+
         script_path.write_text(code)
         logger.debug("[%s] Scene script written to %s", rid, script_path)
 
@@ -93,10 +116,22 @@ def execute_manim(
             "--media_dir",
             str(media_dir),
             "--disable_caching",
-            str(script_path),
-            scene_name,
         ]
+
+        if use_opengl_renderer:
+            cmd.extend(["--renderer", "opengl", "--write_to_movie"])
+
+        cmd.extend([str(script_path), scene_name])
         logger.info("[%s] Executing command: %s", rid, " ".join(cmd))
+
+        env = _build_env()
+        if use_opengl_renderer:
+            existing_pythonpath = env.get("PYTHONPATH")
+            env["PYTHONPATH"] = (
+                f"{work_dir}:{existing_pythonpath}"
+                if existing_pythonpath
+                else str(work_dir)
+            )
 
         try:
             result = subprocess.run(
@@ -105,7 +140,7 @@ def execute_manim(
                 text=True,
                 timeout=timeout,
                 cwd=str(work_dir),
-                env=_build_env(),
+                env=env,
             )
         except subprocess.TimeoutExpired as exc:
             logger.error("[%s] Render timeout after %s seconds", rid, timeout)
