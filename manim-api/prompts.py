@@ -253,6 +253,7 @@ Guidelines:
 3. Inject the available resources e referências abaixo para que o coder LLM saiba o que existe.
 4. Sempre que receber o bloco [VIDEO SPECIFICATIONS], repita no prompt otimizado a resolução (largura x altura), orientação e instruções de enquadramento para garantir que o coder adapte a cena.
 5. Instrua explicitamente que textos devem ficar em camadas acima de gráficos/imagens, usando cores contrastantes, fundos ou `set_z_index` para evitar objetos se fundindo.
+6. Responda sempre no mesmo idioma usado pelo usuário; nada de traduções automáticas (pedido em inglês → resposta em inglês, pedido em português → resposta em português).
 
 Available resources:
 {RESOURCE_CONTEXT}
@@ -276,6 +277,7 @@ MANIM_SYSTEM_PROMPT = f"""You are an expert Manim Community Edition developer. G
 7. Use smooth, professional animation timings (run_time=1 to 2 seconds)
 8. Leia o bloco [VIDEO SPECIFICATIONS] e distribua objetos respeitando a resolução/ orientação indicada (o render final usará esses valores).
 9. Evite que texto e gráficos se fundam: mantenha textos acima (use `set_z_index`, `add_background_rectangle`/`background_stroke`, cores contrastantes) e garanta que efeitos não passem por cima do texto.
+10. Produza o código e qualquer texto/label/legendas dentro dele no mesmo idioma usado pelo usuário; não traduza pedidos (request em inglês → textos/strings em inglês, request em português → textos em português).
 
 ## CODE TEMPLATE:
 ```python
