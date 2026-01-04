@@ -26,6 +26,13 @@ def _resolve_texlive_bin() -> Optional[Path]:
 
 TEXLIVE_BIN = _resolve_texlive_bin()
 
+BACKGROUND_RECTANGLE_PATCH = """
+from manim.mobject.geometry.shape_matchers import BackgroundRectangle
+
+if not hasattr(BackgroundRectangle, "tex_string"):
+    BackgroundRectangle.tex_string = ""
+"""
+
 
 @dataclass
 class RenderResult:
@@ -80,7 +87,7 @@ def execute_manim(
         work_dir = Path(tmpdir)
         script_path = work_dir / "scene.py"
         media_dir = work_dir / "media"
-        script_path.write_text(code)
+        script_path.write_text(f"{BACKGROUND_RECTANGLE_PATCH}\n\n{code}")
         logger.debug("[%s] Scene script written to %s", rid, script_path)
 
         cmd = [
