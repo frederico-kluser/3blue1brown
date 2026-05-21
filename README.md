@@ -1,6 +1,15 @@
 # Manim Video Generator (Manim CE 0.19.0 + GPT-5.1 Codex Max)
 
-> **TL;DR**: Um backend FastAPI que converte descrições em linguagem natural em vídeos Manim, combinando Manim Community Edition 0.19.0 com o modelo **OpenAI GPT-5.1 Codex Max**. Este README concentra toda a documentação anterior e explica como instalar, configurar, operar e ampliar o projeto.
+> **TL;DR**: Você descreve, em linguagem natural, o vídeo que quer criar e a API usa IA para gerar o código Manim, renderizar e devolver o MP4 pronto.
+
+## O que é este projeto
+Este repositório é um gerador de vídeo com IA para animações educacionais no estilo Manim.  
+Na prática, você só precisa descrever o resultado desejado (por exemplo: _"mostre um círculo azul crescendo e depois indo para a direita"_) e o backend executa o pipeline completo:
+
+1. otimiza a descrição com contexto técnico de Manim CE;
+2. gera código Python de cena com LLM;
+3. valida segurança e estrutura mínima do código;
+4. renderiza o vídeo e retorna em base64 (`/generate-video`) ou arquivo MP4 (`/generate-video-file`).
 
 ## Sumário
 1. [Visão geral](#1-visão-geral)
