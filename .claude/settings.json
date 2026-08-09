@@ -1,0 +1,33 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write||Edit",
+        "pathPattern": "**/skills/**/SKILL.md",
+        "command": "python3 .agents/scripts/skill_write_gate.py \"${path}\"",
+        "description": "Block unvalidated SKILL.md writes — requires a green eval record",
+        "onError": "block"
+      },
+      {
+        "matcher": "Read",
+        "pathPattern": ".env||**/secrets/**||**/.env.*",
+        "command": "exit 2",
+        "description": "Block reading .env and secrets files",
+        "onError": "block"
+      },
+      {
+        "matcher": "Bash",
+        "command": "python3 .agents/scripts/bash_guardrail.py \"${command}\"",
+        "description": "Block dangerous bash commands (rm -rf /, history rewrite, etc.)",
+        "onError": "block"
+      }
+    ],
+    "Stop": [
+      {
+        "command": "python3 .agents/scripts/stop_validation_gate.py",
+        "description": "Prevent Stop until all bootstrap phases are complete",
+        "onError": "block"
+      }
+    ]
+  }
+}
