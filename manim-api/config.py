@@ -13,6 +13,8 @@ class Settings(BaseSettings):
 
     # Manim
     render_timeout: int = 120
+    manim_renderer: str = "auto"
+    manim_renderer_fallback: bool = True
 
     # Server
     host: str = "0.0.0.0"
