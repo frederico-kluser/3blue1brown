@@ -4,8 +4,8 @@
     { "id": 2, "name": "Skill map", "done": true, "gate_passed": true, "artifact": "skill-map.md" },
     { "id": 3, "name": "Generate knowledge and task skills", "done": true, "gate_passed": true, "artifact": "skills + catalog.md" },
     { "id": 4, "name": "Router + verified-evolution mechanism", "done": true, "gate_passed": true, "artifact": "router + meta-skills + hooks" },
-    { "id": 5, "name": "Validation", "done": false, "gate_passed": false, "artifact": "validation-report.md" }
+    { "id": 5, "name": "Validation", "done": true, "gate_passed": true, "artifact": "validation-report.md" }
   ],
-  "updated_by": "phase-4-commit",
+  "updated_by": "phase-5-commit",
   "stop_hook_active": false
 }
