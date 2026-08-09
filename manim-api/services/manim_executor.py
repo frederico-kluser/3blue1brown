@@ -230,6 +230,7 @@ def execute_manim(
             "--media_dir",
             str(media_dir),
             "--disable_caching",
+            "--write_to_movie",
             str(script_path),
             scene_name,
         ]
