@@ -44,19 +44,39 @@ If no TeX Live is found, `TEXLIVE_BIN` is `None` and the subprocess runs with th
 
 ### Manim CLI invocation
 
-`manim_executor.py:93-105` — The exact CLI command:
+`manim_executor.py:225-235` — The base CLI command (before renderer-specific flags):
 
 ```
-manim render -r W,H --fps 60 --media_dir <tmpdir>/media --disable_caching <script.py> <SceneName>
+manim render -r W,H --fps 60 --media_dir <tmpdir>/media --disable_caching --write_to_movie <script.py> <SceneName>
 ```
 
 Key details:
-- `manim render` (CE 0.19.0 syntax, not `manim -pql` legacy)
+- `manim render` (CE 0.19.0+ syntax, not `manim -pql` legacy)
 - `-r W,H` — resolution (e.g., `1920,1080`)
 - `--fps 60` — hardcoded, not configurable via .env
 - `--disable_caching` — prevents stale cache issues across renders
+- `--write_to_movie` — required for OpenGL renderer to produce MP4 output. Cairo also supports it (safe default). Without this flag, the OpenGL renderer animates to screen only and produces no video file, causing "Video file not found after render". Verified against Manim CE v0.20.1 `manim_executor.py:225@922e47d`
 - Quality flag (`-ql/-qh`) is NOT used — resolution is explicit
 - The scene name is a positional argument, not a flag
+- When `settings.manim_renderer` resolves to `"opengl"`, `--renderer=opengl` is inserted at position 2 (after `manim render`)
+- When OpenGL render fails and `settings.manim_renderer_fallback=True`, the command is retried without `--renderer=opengl` (defaults to Cairo)
+
+### GPU renderer detection and fallback
+
+`manim_executor.py:70-118` — `_detect_gpu_renderer()` probes for GPU hardware before checking Manim CLI support:
+1. Hardware probes (Linux): `nvidia-smi -L` (NVIDIA GPU) or `glxinfo -B` (any OpenGL-capable GPU)
+2. If no GPU hardware found → returns `False` (skip OpenGL entirely)
+3. If GPU hardware found → checks `manim render --renderer=opengl --help` exit code
+4. Both required for `True` — having a GPU without Manim OpenGL support is not enough
+
+`manim_executor.py:120-130` — `_resolve_renderer()` maps config to renderer choice:
+- `"cairo"` or `"opengl"` → passes through directly
+- `"auto"` (default) or invalid value → calls `_detect_gpu_renderer()`
+
+`manim_executor.py:252-265` — Fallback logic in `execute_manim()`:
+- If OpenGL render fails AND `manim_renderer_fallback=True` → retries with Cairo
+- Fallback covers all failure modes: non-zero exit, timeout, video not found
+- The retry uses `base_cmd` without `--renderer` flag (Cairo is default)
 
 ### Video file discovery
 
