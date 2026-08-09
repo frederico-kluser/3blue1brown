@@ -252,8 +252,9 @@ APP_NAME="Manim Video Generator API"
 DEBUG=false
 
 # Manim Configuration
-MANIM_QUALITY=l  # l=low(480p), m=medium(720p), h=high(1080p)
 RENDER_TIMEOUT=120  # segundos
+MANIM_RENDERER=auto  # "auto" (detecta GPU), "cairo" (força CPU), "opengl" (força GPU)
+MANIM_RENDERER_FALLBACK=true  # se true, quando o render OpenGL falhar (via "auto" ou "opengl"), tenta novamente com Cairo
 
 # Server
 HOST=0.0.0.0

@@ -145,7 +145,8 @@ cp .env.example .env
 |------|---------|-----------|
 | `OPENAI_API_KEY` | `sk-proj-...` | chave obrigatória |
 | `OPENAI_MODEL` | `gpt-5.1-codex-max` | personalize se necessário |
-| `MANIM_QUALITY` | `l` (`l/m/h/4k`) | define resolução padrão |
+| `MANIM_RENDERER` | `auto` | Renderizador: "auto" (detecta GPU), "cairo" (força CPU), "opengl" (força GPU) |
+| `MANIM_RENDERER_FALLBACK` | `true` | Se true, tenta Cairo quando OpenGL falha |
 | `RENDER_TIMEOUT` | `120` | limite em segundos para cada render |
 | `HOST` / `PORT` | `0.0.0.0` / `8000` | binding do Uvicorn |
 | `DEBUG` | `false` | ativa `uvicorn --reload` se `true` |
