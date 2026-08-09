@@ -89,3 +89,15 @@ The API uses `client.responses.create()` with `reasoning={"effort": "xhigh"}` fo
 - `manim-api/services/openai_service.py` — Code generation, validation, sanitization
 - `manim-api/schemas.py` — Request/response models (10-2000 char limit, 320-3840 px)
 - `manim-api/config.py` — Settings (OPENAI_API_KEY, OPENAI_MODEL, RENDER_TIMEOUT)
+
+## Evolution
+
+On task completion, if this skill was involved in the work, run the memory pipeline (see `meta-skill-evolution`):
+
+1. **Importance**: Is the new information non-obvious, non-inferable, non-volatile, and does it change how future code-gen tasks should be done?
+2. **Verification**: Was it confirmed by a green test/lint/eval OR explicit user confirmation? Without external signal → discard.
+3. **Conflict detection**: Does it contradict existing passages? If so, REPLACE, don't append.
+4. **Gating**: Run `python3 .agents/scripts/skill_lint.py` and `python3 .agents/scripts/run_skill_evals.py manim-code-gen`. Discard on regression.
+5. **Update**: Edit THIS file directly (no learnings files). Keep under 500 lines. Git commit separately.
+
+If nothing important and verified was learned, write nothing — that's the healthy default.

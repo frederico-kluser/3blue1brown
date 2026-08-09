@@ -1,0 +1,12 @@
+{
+  "skill": "manim-code-gen",
+  "last_eval_passed": false,
+  "timestamp": "2026-08-09T14:10:06.767849+00:00",
+  "results": [
+    {
+      "test": "imports check (manim-api deps available)",
+      "passed": false,
+      "detail": "Cannot import (venv may not be active): No module named 'pydantic_settings'"
+    }
+  ]
+}

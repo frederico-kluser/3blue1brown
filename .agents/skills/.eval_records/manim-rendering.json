@@ -1,0 +1,22 @@
+{
+  "skill": "manim-rendering",
+  "last_eval_passed": false,
+  "timestamp": "2026-08-09T14:10:06.769702+00:00",
+  "results": [
+    {
+      "test": "RenderResult dataclass instantiates",
+      "passed": false,
+      "detail": "No module named 'pydantic_settings'"
+    },
+    {
+      "test": "manim --version exits 0",
+      "passed": false,
+      "detail": "manim CLI not installed in this environment (expected outside venv)"
+    },
+    {
+      "test": "BackgroundRectangle patch is valid Python",
+      "passed": true,
+      "detail": "AST parse OK"
+    }
+  ]
+}

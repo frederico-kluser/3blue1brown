@@ -99,3 +99,15 @@ In `main.py`, rendering runs via `asyncio.to_thread()` (line 155) to avoid block
 - `manim-api/services/manim_executor.py` — Full executor implementation (157 lines)
 - `manim-api/main.py:155-179` — Render integration in /generate-video endpoint
 - `manim-api/config.py:15` — `RENDER_TIMEOUT` default (120s)
+
+## Evolution
+
+On task completion, if this skill was involved in the work, run the memory pipeline (see `meta-skill-evolution`):
+
+1. **Importance**: Is the new information non-obvious, non-inferable, non-volatile, and does it change how future rendering tasks should be done?
+2. **Verification**: Was it confirmed by a green test/lint/eval OR explicit user confirmation? Without external signal → discard.
+3. **Conflict detection**: Does it contradict existing passages? If so, REPLACE, don't append.
+4. **Gating**: Run `python3 .agents/scripts/skill_lint.py` and `python3 .agents/scripts/run_skill_evals.py manim-rendering`. Discard on regression.
+5. **Update**: Edit THIS file directly (no learnings files). Keep under 500 lines. Git commit separately.
+
+If nothing important and verified was learned, write nothing — that's the healthy default.

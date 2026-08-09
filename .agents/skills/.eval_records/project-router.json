@@ -1,0 +1,82 @@
+{
+  "skill": "project-router",
+  "last_eval_passed": true,
+  "timestamp": "2026-08-09T14:10:06.772303+00:00",
+  "results": [
+    {
+      "test": "TRIGGER: 'add new endpoint to the API...' \u2192 ['fastapi-app']",
+      "passed": true,
+      "detail": "Matched: ['fastapi-app']"
+    },
+    {
+      "test": "TRIGGER: 'change the CORS middleware...' \u2192 ['fastapi-app']",
+      "passed": true,
+      "detail": "Matched: ['fastapi-app']"
+    },
+    {
+      "test": "TRIGGER: 'add a new few-shot example for code generation...' \u2192 ['manim-code-gen']",
+      "passed": true,
+      "detail": "Matched: ['manim-code-gen']"
+    },
+    {
+      "test": "TRIGGER: 'fix the render timeout bug...' \u2192 ['manim-rendering']",
+      "passed": true,
+      "detail": "Matched: ['manim-rendering']"
+    },
+    {
+      "test": "TRIGGER: 'debug why videos are not being found after render...' \u2192 ['manim-rendering']",
+      "passed": true,
+      "detail": "Matched: ['manim-rendering']"
+    },
+    {
+      "test": "TRIGGER: 'update the system prompt for better code gen...' \u2192 ['manim-code-gen']",
+      "passed": true,
+      "detail": "Matched: ['manim-code-gen']"
+    },
+    {
+      "test": "TRIGGER: 'add a new config variable to .env...' \u2192 ['fastapi-app']",
+      "passed": true,
+      "detail": "Matched: ['fastapi-app']"
+    },
+    {
+      "test": "TRIGGER: 'the code generator keeps producing CYAN color...' \u2192 ['manim-code-gen']",
+      "passed": true,
+      "detail": "Matched: ['manim-code-gen']"
+    },
+    {
+      "test": "TRIGGER: 'BackgroundRectangle is crashing the render...' \u2192 ['manim-rendering']",
+      "passed": true,
+      "detail": "Matched: ['manim-rendering']"
+    },
+    {
+      "test": "TRIGGER: 'add health check endpoint for the model version...' \u2192 ['fastapi-app']",
+      "passed": true,
+      "detail": "Matched: ['fastapi-app']"
+    },
+    {
+      "test": "NEAR-MISS: 'write a README for the project...' NOT \u2192 ['manim-code-gen', 'manim-rendering']",
+      "passed": true,
+      "detail": "Matched: []"
+    },
+    {
+      "test": "NEAR-MISS: 'what is Python 3.11 syntax...' NOT \u2192 ['manim-code-gen', 'fastapi-app']",
+      "passed": true,
+      "detail": "Matched: []"
+    },
+    {
+      "test": "NEAR-MISS: 'how do I install homebrew...' NOT \u2192 ['manim-rendering', 'fastapi-app']",
+      "passed": true,
+      "detail": "Matched: []"
+    },
+    {
+      "test": "NEAR-MISS: 'explain quantum mechanics...' NOT \u2192 ['manim-code-gen', 'manim-rendering', 'fastapi-app']",
+      "passed": true,
+      "detail": "Matched: []"
+    },
+    {
+      "test": "NEAR-MISS: 'what time is it...' NOT \u2192 ['manim-code-gen', 'manim-rendering', 'fastapi-app']",
+      "passed": true,
+      "detail": "Matched: []"
+    }
+  ]
+}

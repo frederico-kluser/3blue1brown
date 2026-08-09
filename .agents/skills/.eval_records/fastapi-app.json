@@ -1,0 +1,27 @@
+{
+  "skill": "fastapi-app",
+  "last_eval_passed": true,
+  "timestamp": "2026-08-09T14:10:06.772134+00:00",
+  "results": [
+    {
+      "test": "main.py AST parse",
+      "passed": true,
+      "detail": "AST parse OK"
+    },
+    {
+      "test": "schemas.py AST parse",
+      "passed": true,
+      "detail": "AST parse OK"
+    },
+    {
+      "test": "config.py AST parse",
+      "passed": true,
+      "detail": "AST parse OK"
+    },
+    {
+      "test": "prompts.py AST parse",
+      "passed": true,
+      "detail": "AST parse OK"
+    }
+  ]
+}
