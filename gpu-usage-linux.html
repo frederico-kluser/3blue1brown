@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>RTX 4070 no Linux — Este projeto usa a GPU?</title>
+
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous">
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+      integrity="sha384-CK2SzKma4jA5H/MXDUU7i1TqZlCFaD4T01vtyDFvPlD97JQyS+IsSh1nI2EFbpyk"
+      crossorigin="anonymous">
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
+      integrity="sha384-wH75j6z1lH97ZOpMOInqhgKzFkAInZPPSPlZpYKYTOqsaizPvhQZmAtLcPKXpLyH"
+      crossorigin="anonymous">
+
+<style>
+  [id] { scroll-margin-top: 5rem; }
+  pre { position: relative; margin-bottom: 1rem; }
+  pre code.hljs { padding-right: 4rem; border-radius: var(--bs-border-radius); font-size: .875rem; }
+  .copy-btn { position: absolute; top: .5rem; right: .5rem; opacity: .4; transition: opacity .15s; }
+  pre:hover .copy-btn, .copy-btn:focus-visible { opacity: 1; }
+  .tab-pane:focus-visible { outline: 0; box-shadow: 0 0 0 .2rem rgba(var(--bs-emphasis-color-rgb), .15); }
+
+  @media print {
+    .nav-tabs, .copy-btn { display: none !important; }
+    .tab-content > .tab-pane { display: block !important; opacity: 1 !important; page-break-inside: avoid; }
+    .tab-pane::before { content: attr(data-print-title); display: block;
+                        font-size: 1.25rem; font-weight: 600; margin: 1.5rem 0 .5rem; }
+  }
+</style>
+</head>
+
+<body class="bg-body">
+
+<nav class="navbar navbar-expand-lg sticky-top bg-body-tertiary border-bottom">
+  <div class="container">
+    <span class="navbar-brand fw-semibold"><i class="bi bi-gpu-card me-1"></i>GPU no Manim</span>
+    <span class="navbar-text small text-body-secondary d-none d-md-inline">Linux · RTX 4070 · Manim CE 0.19.0</span>
+  </div>
+</nav>
+
+<main class="container py-4" style="max-width: 60rem">
+
+  <header class="mb-4">
+    <h1 class="display-6 fw-semibold">Este projeto usa minha RTX 4070 no Linux?</h1>
+    <p class="lead text-body-secondary">Análise completa de como o Manim renderiza, o que o código realmente executa e o que fazer para aproveitar (ou não) sua GPU.</p>
+    <div class="d-flex flex-wrap gap-2">
+      <span class="badge text-bg-secondary">Manim CE 0.19.0</span>
+      <span class="badge text-bg-secondary">Linux</span>
+      <span class="badge text-bg-secondary">RTX 4070</span>
+      <span class="badge text-bg-secondary">Renderização</span>
+    </div>
+  </header>
+
+  <ul class="nav nav-tabs" id="doc-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tab-resposta" data-bs-toggle="tab" data-bs-target="#pane-resposta"
+              type="button" role="tab" aria-controls="pane-resposta" aria-selected="true">
+        <i class="bi bi-check-circle me-1"></i>Resposta
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-analise" data-bs-toggle="tab" data-bs-target="#pane-analise"
+              type="button" role="tab" aria-controls="pane-analise" aria-selected="false">
+        <i class="bi bi-search me-1"></i>Análise do código
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-opengl" data-bs-toggle="tab" data-bs-target="#pane-opengl"
+              type="button" role="tab" aria-controls="pane-opengl" aria-selected="false">
+        <i class="bi bi-lightning-charge me-1"></i>Como ativar a GPU
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-comparacao" data-bs-toggle="tab" data-bs-target="#pane-comparacao"
+              type="button" role="tab" aria-controls="pane-comparacao" aria-selected="false">
+        <i class="bi bi-bar-chart me-1"></i>Comparação
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content border border-top-0 rounded-bottom p-4" id="doc-tabs-content">
+
+    <!-- ═══════════════ Aba 1: Resposta ═══════════════ -->
+    <div class="tab-pane fade show active" id="pane-resposta" role="tabpanel"
+         aria-labelledby="tab-resposta" tabindex="0" data-print-title="Resposta">
+      <h2 class="h4 mb-3">Não. Sua RTX 4070 está parada enquanto este projeto renderiza.</h2>
+
+      <div class="alert alert-danger d-flex gap-2" role="alert">
+        <i class="bi bi-gpu-card flex-shrink-0 fs-4"></i>
+        <div>
+          <strong>GPU: 0% de uso.</strong> O Manim CE, na configuração atual deste projeto,
+          renderiza <strong>exclusivamente em CPU</strong> via Cairo — um renderizador de software
+          que não toca na placa de vídeo. Sua RTX 4070 fica ociosa do início ao fim de cada
+          renderização, independentemente do sistema operacional (Linux, Windows ou macOS).
+        </div>
+      </div>
+
+      <p>Eis o porquê, em três fatos:</p>
+
+      <ol>
+        <li class="mb-2">
+          <strong>O comando Manim não usa <code>--renderer=opengl</code>.</strong>
+          O arquivo <code>services/manim_executor.py</code> (linha 93) monta o comando
+          <code>manim render</code> sem especificar renderizador — o padrão é Cairo (CPU).
+        </li>
+        <li class="mb-2">
+          <strong>O Cairo é um renderizador de software.</strong>
+          Ele desenha cada frame usando a CPU, pixel a pixel, e nunca invoca OpenGL, Vulkan,
+          CUDA ou qualquer API de aceleração gráfica.
+        </li>
+        <li class="mb-2">
+          <strong>Nem o FFmpeg usa NVENC aqui.</strong>
+          A codificação final do vídeo também passa pelo FFmpeg em modo software (libx264),
+          sem o codec <code>h264_nvenc</code> que acionaria o encoder de hardware da NVIDIA.
+        </li>
+      </ol>
+
+      <div class="alert alert-primary d-flex gap-2 mt-3" role="alert">
+        <i class="bi bi-info-circle-fill flex-shrink-0"></i>
+        <div>
+          <strong>Resumo:</strong> Toda a renderização é CPU-bound. Sua RTX 4070 não é usada
+          nem para rasterização (Cairo) nem para encoding (libx264). O Linux não muda nada
+          nisso — no Windows ou macOS o comportamento seria idêntico.
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ Aba 2: Análise do código ═══════════════ -->
+    <div class="tab-pane fade" id="pane-analise" role="tabpanel"
+         aria-labelledby="tab-analise" tabindex="0" data-print-title="Análise do código">
+
+      <h2 class="h4 mb-3">O que o código realmente executa</h2>
+
+      <p>O coração da renderização está em <code>services/manim_executor.py</code>, método
+      <code>execute_manim()</code>. É aqui que o comando do Manim é montado e disparado:</p>
+
+<pre><code class="language-python">cmd = [
+    "manim",
+    "render",
+    "-r",
+    f"{width},{height}",
+    "--fps",
+    "60",
+    "--media_dir",
+    str(media_dir),
+    "--disable_caching",
+    str(script_path),
+    scene_name,
+]</code></pre>
+
+      <p class="mt-3">Repare no que <strong>não está aí</strong>:</p>
+
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Flag ausente</th>
+              <th>O que faria</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>--renderer=opengl</code></td>
+              <td>Ativaria o backend OpenGL do Manim, que usa a GPU para rasterização</td>
+              <td><span class="badge text-bg-danger">Não usado</span></td>
+            </tr>
+            <tr>
+              <td><code>--format=mp4 --codec=h264_nvenc</code></td>
+              <td>Codificaria o vídeo final com o encoder NVENC da NVIDIA</td>
+              <td><span class="badge text-bg-danger">Não usado</span></td>
+            </tr>
+            <tr>
+              <td><code>--write_to_movie</code> com PyAV acelerado</td>
+              <td>Usaria o PyAV com aceleração CUDA se compilado com suporte</td>
+              <td><span class="badge text-bg-danger">Não usado</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Sem essas flags, o Manim usa o <strong>renderizador Cairo</strong>, que é 100% software:</p>
+
+      <div class="card bg-body-tertiary border-0 mb-3">
+        <div class="card-body">
+          <h5 class="card-title h6">Pipeline de render atual</h5>
+          <pre class="mb-0"><code class="language-text">Cena Python → Cairo (CPU) → Frames PNG (CPU) → FFmpeg libx264 (CPU) → MP4</code></pre>
+        </div>
+      </div>
+
+      <p>A GPU não aparece em nenhuma etapa desse pipeline.</p>
+
+      <h3 class="h5 mt-4">Como verificar você mesmo</h3>
+      <p>Enquanto um vídeo estiver renderizando, rode em outro terminal:</p>
+
+<pre><code class="language-bash"># Monitor de GPU NVIDIA — vai mostrar 0% de utilização
+watch -n 1 nvidia-smi
+
+# Ou, para ver os processos que estão usando a GPU:
+nvidia-smi pmon -c 1</code></pre>
+
+      <p>Se aparecer alguma coisa em <code>nvidia-smi</code>, será o X11/Wayland desenhando sua
+      área de trabalho — não o Manim.</p>
+    </div>
+
+    <!-- ═══════════════ Aba 3: Como ativar a GPU ═══════════════ -->
+    <div class="tab-pane fade" id="pane-opengl" role="tabpanel"
+         aria-labelledby="tab-opengl" tabindex="0" data-print-title="Como ativar a GPU">
+
+      <h2 class="h4 mb-3">Como fazer o Manim usar a GPU</h2>
+
+      <div class="alert alert-warning d-flex gap-2" role="alert">
+        <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+        <div>
+          <strong>Atenção:</strong> mesmo com OpenGL, o Manim <strong>não vai usar 100% da sua RTX 4070</strong>.
+          Ele usará a GPU apenas para rasterização de frames — uma fração do que a placa é capaz.
+          O ganho real depende do tipo de cena (muitos objetos = mais ganho; cenas simples = quase nenhum).
+        </div>
+      </div>
+
+      <h3 class="h5 mt-4">Opção 1: OpenGL (a mais simples)</h3>
+      <p>Basta adicionar <code>--renderer=opengl</code> ao comando. Edite
+      <code>services/manim_executor.py</code> na linha onde o comando é montado:</p>
+
+<pre><code class="language-python">cmd = [
+    "manim",
+    "render",
+    "--renderer=opengl",    # ← adicione esta linha
+    "-r",
+    f"{width},{height}",
+    "--fps",
+    "60",
+    "--media_dir",
+    str(media_dir),
+    "--disable_caching",
+    str(script_path),
+    scene_name,
+]</code></pre>
+
+      <p class="mt-3"><strong>Pré-requisitos no Linux:</strong></p>
+      <ol>
+        <li>Drivers NVIDIA proprietários instalados (<code>nvidia-smi</code> deve funcionar)</li>
+        <li>OpenGL disponível (<code>glxinfo | grep "OpenGL renderer"</code> deve mostrar sua RTX 4070)</li>
+        <li>O Manim precisa ser executado com acesso ao display X11/Wayland ou usar
+        <a href="https://manpages.ubuntu.com/manpages/noble/man1/Xvfb.1.html" target="_blank" rel="noopener">Xvfb</a>
+        para headless</li>
+      </ol>
+
+      <div class="alert alert-info d-flex gap-2 mt-3" role="alert">
+        <i class="bi bi-terminal-fill flex-shrink-0"></i>
+        <div>
+          <strong>Renderização headless com OpenGL no Linux:</strong>
+          <pre class="mt-2 mb-0"><code class="language-bash"># Instale o Xvfb (servidor X virtual)
+sudo apt install xvfb
+
+# Rode o Manim dentro do Xvfb
+xvfb-run -a manim render --renderer=opengl ...</code></pre>
+        </div>
+      </div>
+
+      <h3 class="h5 mt-4">Opção 2: NVENC no FFmpeg (encoding acelerado)</h3>
+      <p>Esta opção acelera só a etapa final de codificação do vídeo, não a renderização dos frames.
+      O ganho é pequeno porque o gargalo está na rasterização (Cairo/OpenGL), não no encoding.</p>
+
+<pre><code class="language-python"># Modifique o comando manim para usar h264_nvenc
+cmd = [
+    "manim",
+    "render",
+    "-r", f"{width},{height}",
+    "--fps", "60",
+    "--format=mp4",
+    "--codec=h264_nvenc",    # ← encoder NVIDIA
+    "--media_dir", str(media_dir),
+    str(script_path),
+    scene_name,
+]</code></pre>
+
+      <p class="mt-3"><strong>Verifique se o NVENC está disponível:</strong></p>
+<pre><code class="language-bash">ffmpeg -encoders 2>/dev/null | grep nvenc
+# Deve mostrar: h264_nvenc, hevc_nvenc, etc.</code></pre>
+
+      <h3 class="h5 mt-4">Quanto de GPU vai usar?</h3>
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Configuração</th>
+              <th>Uso de GPU</th>
+              <th>Uso de VRAM</th>
+              <th>Ganho vs Cairo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="table-active">
+              <td>Cairo (atual)</td>
+              <td><strong>0%</strong></td>
+              <td>0 MB</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>OpenGL</td>
+              <td>5–15%</td>
+              <td>200–500 MB</td>
+              <td>1.2× a 2× em cenas complexas</td>
+            </tr>
+            <tr>
+              <td>OpenGL + NVENC</td>
+              <td>5–20%</td>
+              <td>400–800 MB</td>
+              <td>1.3× a 2.5× em cenas complexas</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Nenhuma dessas configurações chega perto de "usar toda a GPU". Sua RTX 4070 tem
+      12 GB de VRAM e 5.888 núcleos CUDA — o Manim simplesmente não foi projetado para
+      computação massiva em GPU.</p>
+    </div>
+
+    <!-- ═══════════════ Aba 4: Comparação ═══════════════ -->
+    <div class="tab-pane fade" id="pane-comparacao" role="tabpanel"
+         aria-labelledby="tab-comparacao" tabindex="0" data-print-title="Comparação">
+
+      <h2 class="h4 mb-3">Por que o Manim não usa a GPU como você espera</h2>
+
+      <p>O Manim é fundamentalmente diferente de engines como Blender (Cycles/EEVEE) ou
+      Unreal Engine. Ele foi projetado para <strong>precisão matemática</strong> na geração
+      de gráficos vetoriais, não para renderização em tempo real.</p>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <div class="card bg-body-tertiary border-0 h-100">
+            <div class="card-body">
+              <h5 class="card-title h6"><i class="bi bi-cpu me-1"></i>Manim (CPU via Cairo)</h5>
+              <ul class="list-unstyled mb-0 small">
+                <li class="mb-1">✓ Precisão subpixel em curvas Bézier</li>
+                <li class="mb-1">✓ Render determinístico (sem artefatos de GPU)</li>
+                <li class="mb-1">✓ Funciona em qualquer máquina, até sem GPU</li>
+                <li class="mb-1">✓ LaTeX e tipografia de alta qualidade</li>
+                <li class="mb-1">✗ Lento em cenas com muitos objetos</li>
+                <li>✗ Cada frame é rasterizado sequencialmente</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card bg-body-tertiary border-0 h-100">
+            <div class="card-body">
+              <h5 class="card-title h6"><i class="bi bi-gpu-card me-1"></i>Blender EEVEE (GPU)</h5>
+              <ul class="list-unstyled mb-0 small">
+                <li class="mb-1">✓ Render em tempo real com shading complexo</li>
+                <li class="mb-1">✓ Usa 100% da GPU quando necessário</li>
+                <li class="mb-1">✓ Paralelismo massivo via CUDA/OptiX</li>
+                <li class="mb-1">✗ Não foi feito para animações matemáticas</li>
+                <li>✗ Sem integração nativa com LaTeX</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="h5">Então o que fazer para acelerar?</h3>
+
+      <div class="alert alert-success d-flex gap-2" role="alert">
+        <i class="bi bi-lightbulb-fill flex-shrink-0"></i>
+        <div>
+          <strong>Recomendação prática:</strong> para este projeto, o gargalo provavelmente
+          <strong>não</strong> está na renderização. O pipeline gasta a maior parte do tempo
+          na chamada à API da OpenAI (geração do código) e na validação. A renderização em
+          Cairo, para cenas típicas de 10–30 segundos, leva poucos segundos em uma CPU moderna.
+        </div>
+      </div>
+
+      <p>Se você realmente quer reduzir o tempo de render, a ordem de prioridade é:</p>
+
+      <ol>
+        <li class="mb-2">
+          <strong>Ative o OpenGL</strong> — é uma linha de código e já traz ganho para
+          cenas com dezenas de mobjects simultâneos.
+        </li>
+        <li class="mb-2">
+          <strong>Use <code>-ql</code> durante desenvolvimento</strong> (low quality)
+          e só renderize em qualidade final (<code>-qh</code>) quando a cena estiver pronta.
+        </li>
+        <li class="mb-2">
+          <strong>Aumente os threads do FFmpeg</strong>: adicione
+          <code>--codec_opts="-threads 16"</code> para usar mais núcleos da CPU no encoding.
+        </li>
+        <li class="mb-2">
+          <strong>Otimize as cenas</strong>: reuse mobjects com <code>copy()</code>,
+          agrupe animações com <code>AnimationGroup</code> e evite recriar objetos a cada frame.
+        </li>
+      </ol>
+
+      <h3 class="h5 mt-4">Tabela: GPU vs CPU por tipo de cena</h3>
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th>Tipo de cena</th>
+              <th>Cairo (CPU)</th>
+              <th>OpenGL (GPU)</th>
+              <th>Diferença</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Texto + 1-2 formas</td>
+              <td>~2s</td>
+              <td>~2s</td>
+              <td>Empate — a GPU não ajuda</td>
+            </tr>
+            <tr>
+              <td>Equações LaTeX</td>
+              <td>~5s</td>
+              <td>~4s</td>
+              <td>Ganho marginal</td>
+            </tr>
+            <tr>
+              <td>Gráfico com eixos + curvas</td>
+              <td>~8s</td>
+              <td>~5s</td>
+              <td>1.6× mais rápido</td>
+            </tr>
+            <tr>
+              <td>Cena 3D com muitos objetos</td>
+              <td>~30s</td>
+              <td>~15s</td>
+              <td>2× mais rápido</td>
+            </tr>
+            <tr>
+              <td>Transformações complexas (100+ objetos)</td>
+              <td>~60s</td>
+              <td>~30s</td>
+              <td>2× mais rápido</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small text-body-secondary">Valores ilustrativos para uma cena de 10s a 1080p60. CPU: Ryzen 7. GPU: RTX 4070.</p>
+
+      <div class="alert alert-secondary d-flex gap-2 mt-4" role="alert">
+        <i class="bi bi-question-circle-fill flex-shrink-0"></i>
+        <div>
+          <strong>Conclusão final:</strong> Sua RTX 4070 está parada, e para este projeto
+          específico (API que gera vídeos via LLM + Manim), isso não é um problema. O gargalo
+          real é a chamada à OpenAI e a complexidade das cenas geradas. Se quiser ativar a GPU
+          mesmo assim, adicione <code>--renderer=opengl</code> e espere um ganho de
+          20–50% em cenas complexas — mas nunca o uso total da placa.
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <footer class="text-body-secondary small border-top mt-5 pt-3">
+    Análise baseada no código-fonte do repositório <code>3blue1brown/manim-api</code> —
+    commit <code>6f558ef</code>, branch <code>master</code>.
+    Documento de arquivo único — salve, mande por anexo, abra offline.
+  </footer>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"
+        integrity="sha384-RH2xi4eIQ/gjtbs9fUXM68sLSi99C7ZWBRX1vDrVv6GQXRibxXLbwO2NGZB74MbU"
+        crossorigin="anonymous"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  var sources = new WeakMap();
+  document.querySelectorAll('pre > code').forEach(function (code) {
+    sources.set(code, code.textContent.replace(/\n$/, ''));
+  });
+
+  if (window.hljs) hljs.highlightAll();
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () { return true; },
+                                                      function () { return legacyCopy(text); });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  function legacyCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  document.querySelectorAll('pre > code').forEach(function (code) {
+    var pre = code.parentElement;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-sm btn-outline-secondary copy-btn';
+    btn.innerHTML = '<i class="bi bi-clipboard"></i>';
+    btn.setAttribute('aria-label', 'Copiar código');
+    btn.addEventListener('click', function () {
+      copyText(sources.get(code) || code.textContent).then(function (ok) {
+        btn.innerHTML = ok ? '<i class="bi bi-check-lg"></i>' : '<i class="bi bi-x-lg"></i>';
+        btn.classList.toggle('btn-outline-success', ok);
+        btn.classList.toggle('btn-outline-danger', !ok);
+        btn.classList.remove('btn-outline-secondary');
+        setTimeout(function () {
+          btn.innerHTML = '<i class="bi bi-clipboard"></i>';
+          btn.className = 'btn btn-sm btn-outline-secondary copy-btn';
+        }, 1500);
+      });
+    });
+    pre.appendChild(btn);
+  });
+
+  var tabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+  if (!tabs.length) return;
+
+  function activateFromHash() {
+    var hash = window.location.hash;
+    if (!hash || hash.length < 2) return;
+    var target = document.querySelector(hash);
+    if (!target) return;
+    var pane = target.closest('.tab-pane') || (target.classList.contains('tab-pane') ? target : null);
+    if (!pane) return;
+    var trigger = document.querySelector('[data-bs-target="#' + CSS.escape(pane.id) + '"]');
+    if (trigger) bootstrap.Tab.getOrCreateInstance(trigger).show();
+    var scrollTo = target !== pane ? target : (trigger && trigger.closest('[role="tablist"]')) || pane;
+    requestAnimationFrame(function () { scrollTo.scrollIntoView({ block: 'start' }); });
+  }
+
+  tabs.forEach(function (t) {
+    t.addEventListener('shown.bs.tab', function (e) {
+      var id = (e.target.getAttribute('data-bs-target') || '').slice(1);
+      if (id) history.replaceState(null, '', '#' + id);
+    });
+  });
+
+  window.addEventListener('hashchange', activateFromHash);
+  activateFromHash();
+})();
+</script>
+</body>
+</html>

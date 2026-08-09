@@ -2,10 +2,10 @@
   "phases": [
     { "id": 1, "name": "Latest-docs analysis + deep project analysis", "done": true, "gate_passed": true, "artifact": "project-analysis.md" },
     { "id": 2, "name": "Skill map", "done": true, "gate_passed": true, "artifact": "skill-map.md" },
-    { "id": 3, "name": "Generate knowledge and task skills", "done": false, "gate_passed": false, "artifact": "skills + catalog.md" },
+    { "id": 3, "name": "Generate knowledge and task skills", "done": true, "gate_passed": true, "artifact": "skills + catalog.md" },
     { "id": 4, "name": "Router + verified-evolution mechanism", "done": false, "gate_passed": false, "artifact": "router + meta-skills + hooks" },
     { "id": 5, "name": "Validation", "done": false, "gate_passed": false, "artifact": "validation-report.md" }
   ],
-  "updated_by": "phase-2-commit",
+  "updated_by": "phase-3-commit",
   "stop_hook_active": false
 }
