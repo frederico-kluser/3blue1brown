@@ -1,53 +1,26 @@
-"""Template: gráfico de barras animado."""
+"""Template: gráfico de barras animado.
 
-from typing import Any
+A cena :class:`BarChart` pode ser renderizada standalone pelo Manim CLI:
 
-from .base import ClipTemplate
+    manim render -r 600,400 --fps 30 --write_to_movie --disable_caching \
+        manim-api/templates/bar_chart.py BarChart
 
+Para uso via registry/API, a função :func:`get_source` retorna o código-fonte
+parametrizável como string.
+"""
 
-class BarChartTemplate(ClipTemplate):
-    """Gráfico de barras com labels, valores e cores configuráveis."""
+from manim import *
 
-    name = "bar_chart"
-    description = "An animated bar chart built from labels and numeric values."
+_SCENE_SOURCE_TEMPLATE = """from manim import *
+from manim import config
 
-    @classmethod
-    def render(
-        cls,
-        width: int,
-        height: int,
-        background_color: str,
-        fps: int,
-        **kwargs: Any,
-    ) -> tuple[str, str]:
-        scene_name = "BarChartScene"
-        labels = kwargs.get("labels", ["A", "B", "C"])
-        values = kwargs.get("values", [3, 7, 5])
-        colors = kwargs.get(
-            "colors",
-            ["#3B82F6", "#10B981", "#F59E0B"],
-        )
-        run_time = float(kwargs.get("run_time", 2.5))
+config.background_color = {background_color!r}
 
-        # Garante listas homogêneas e com valores positivos.
-        labels = [str(label) for label in labels[:8]]
-        values = [max(0.0, float(v)) for v in values[: len(labels)]]
-        while len(values) < len(labels):
-            values.append(0.0)
-        while len(colors) < len(labels):
-            colors.append(colors[len(colors) % len(colors)] if colors else "#3B82F6")
-
-        labels_repr = repr(labels)
-        values_repr = repr(values)
-        colors_repr = repr(colors)
-
-        code = f'''from manim import *
-
-class {scene_name}(Scene):
+class BarChart(Scene):
     def construct(self):
-        labels = {labels_repr}
-        values = {values_repr}
-        colors = {colors_repr}
+        labels = {labels!r}
+        values = {values!r}
+        colors = {colors!r}
 
         if not values:
             self.wait(0.5)
@@ -84,8 +57,90 @@ class {scene_name}(Scene):
             group = VGroup(bar, value_label, name_label)
             chart.add(group)
 
-        self.play(*[GrowFromEdge(g[0], DOWN) for g in chart], run_time={run_time})
+        self.play(*[GrowFromEdge(g[0], DOWN) for g in chart], run_time={run_time!r})
         self.play(*[FadeIn(label) for g in chart for label in (g[1], g[2])], run_time=0.6)
         self.wait(0.5)
-'''
-        return scene_name, code
+"""
+
+_DEFAULT_LABELS = ["A", "B", "C"]
+_DEFAULT_VALUES = [3, 7, 5]
+_DEFAULT_COLORS = ["#3B82F6", "#10B981", "#F59E0B"]
+_DEFAULT_RUN_TIME = 2.5
+
+
+def _normalize_chart_data(
+    labels: list,
+    values: list,
+    colors: list,
+) -> tuple[list[str], list[float], list[str]]:
+    """Normaliza labels, valores e cores para o gráfico."""
+    labels = [str(label) for label in labels[:8]]
+    values = [max(0.0, float(v)) for v in values[: len(labels)]]
+    while len(values) < len(labels):
+        values.append(0.0)
+
+    safe_colors = list(colors)
+    while len(safe_colors) < len(labels):
+        safe_colors.append(
+            safe_colors[len(safe_colors) % len(safe_colors)]
+            if safe_colors
+            else "#3B82F6"
+        )
+    return labels, values, safe_colors[: len(labels)]
+
+
+_DEFAULTS = {
+    "background_color": "#FFFFFF",
+    "labels": _DEFAULT_LABELS,
+    "values": _DEFAULT_VALUES,
+    "colors": _DEFAULT_COLORS,
+    "run_time": _DEFAULT_RUN_TIME,
+}
+
+exec(_SCENE_SOURCE_TEMPLATE.format(**_DEFAULTS), globals())
+
+
+def get_source(
+    background_color: str = _DEFAULTS["background_color"],
+    labels: list | None = None,
+    values: list | None = None,
+    colors: list | None = None,
+    run_time: float = _DEFAULT_RUN_TIME,
+    **kwargs,
+) -> tuple[str, str]:
+    """Retorna o nome da cena e o código-fonte parametrizado.
+
+    Parameters
+    ----------
+    background_color
+        Cor de fundo da cena (hex).
+    labels
+        Rótulos das barras.
+    values
+        Valores numéricos das barras.
+    colors
+        Cores de cada barra (hex).
+    run_time
+        Duração da animação de crescimento das barras, em segundos.
+
+    Returns
+    -------
+    tuple[str, str]
+        ``(scene_name, source_code)`` pronto para renderização.
+    """
+    labels_in = kwargs.get("labels", labels) or list(_DEFAULT_LABELS)
+    values_in = kwargs.get("values", values) or list(_DEFAULT_VALUES)
+    colors_in = kwargs.get("colors", colors) or list(_DEFAULT_COLORS)
+
+    norm_labels, norm_values, norm_colors = _normalize_chart_data(
+        labels_in, values_in, colors_in
+    )
+
+    params = {
+        "background_color": kwargs.get("background_color", background_color),
+        "labels": norm_labels,
+        "values": norm_values,
+        "colors": norm_colors,
+        "run_time": float(kwargs.get("run_time", run_time)),
+    }
+    return "BarChart", _SCENE_SOURCE_TEMPLATE.format(**params)

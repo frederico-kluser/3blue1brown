@@ -1,35 +1,25 @@
-"""Template: espiral de Ulam destacando números primos."""
+"""Template: espiral de Ulam destacando números primos.
 
-from .base import ClipTemplate
+A cena :class:`UlamSpiral` pode ser renderizada standalone pelo Manim CLI:
 
+    manim render -r 600,400 --fps 30 --write_to_movie --disable_caching \
+        manim-api/templates/ulam_spiral.py UlamSpiral
 
-class UlamSpiralTemplate(ClipTemplate):
-    """Espiral quadrada de Ulam com primos destacados em vermelho."""
+Para uso via registry/API, a função :func:`get_source` retorna o código-fonte
+parametrizável como string.
+"""
 
-    name = "ulam_spiral"
-    description = "Ulam spiral highlighting prime numbers among composites."
+from manim import *
 
-    @classmethod
-    def render(
-        cls,
-        width: int,
-        height: int,
-        background_color: str,
-        fps: int,
-        **kwargs,
-    ) -> tuple[str, str]:
-        scene_name = "UlamSpiralScene"
-        n = int(kwargs.get("n", 200))
-        prime_color = kwargs.get("prime_color", "#EF4444")
-        composite_color = kwargs.get("composite_color", "#94A3B8")
-        run_time = float(kwargs.get("run_time", 2.5))
+_SCENE_SOURCE_TEMPLATE = """from manim import *
+from manim import config
 
-        code = f'''from manim import *
+config.background_color = {background_color!r}
 
-class {scene_name}(Scene):
+class UlamSpiral(Scene):
     def construct(self):
-        n = {n}
-        colors = {{"prime": "{prime_color}", "composite": "{composite_color}"}}
+        n = {n!r}
+        colors = {{"prime": {prime_color!r}, "composite": {composite_color!r}}}
 
         def is_prime(num):
             if num < 2:
@@ -80,7 +70,54 @@ class {scene_name}(Scene):
             )
             dots.add(dot)
 
-        self.play(Create(dots), run_time={run_time})
+        self.play(Create(dots), run_time={run_time!r})
         self.wait(0.5)
-'''
-        return scene_name, code
+"""
+
+_DEFAULTS = {
+    "background_color": "#FFFFFF",
+    "n": 200,
+    "prime_color": "#EF4444",
+    "composite_color": "#94A3B8",
+    "run_time": 2.5,
+}
+
+exec(_SCENE_SOURCE_TEMPLATE.format(**_DEFAULTS), globals())
+
+
+def get_source(
+    background_color: str = _DEFAULTS["background_color"],
+    n: int = _DEFAULTS["n"],
+    prime_color: str = _DEFAULTS["prime_color"],
+    composite_color: str = _DEFAULTS["composite_color"],
+    run_time: float = _DEFAULTS["run_time"],
+    **kwargs,
+) -> tuple[str, str]:
+    """Retorna o nome da cena e o código-fonte parametrizado.
+
+    Parameters
+    ----------
+    background_color
+        Cor de fundo da cena (hex).
+    n
+        Quantidade de números a desenhar na espiral.
+    prime_color
+        Cor dos números primos (hex).
+    composite_color
+        Cor dos números compostos (hex).
+    run_time
+        Duração da animação de criação dos pontos, em segundos.
+
+    Returns
+    -------
+    tuple[str, str]
+        ``(scene_name, source_code)`` pronto para renderização.
+    """
+    params = {
+        "background_color": kwargs.get("background_color", background_color),
+        "n": int(kwargs.get("n", n)),
+        "prime_color": kwargs.get("prime_color", prime_color),
+        "composite_color": kwargs.get("composite_color", composite_color),
+        "run_time": float(kwargs.get("run_time", run_time)),
+    }
+    return "UlamSpiral", _SCENE_SOURCE_TEMPLATE.format(**params)

@@ -1,50 +1,29 @@
-"""Template: zoom animado sobre uma reta numérica."""
+"""Template: zoom animado sobre uma reta numérica.
 
-from typing import Any
+A cena :class:`NumberLine` pode ser renderizada standalone pelo Manim CLI:
 
-from .base import ClipTemplate
+    manim render -r 600,400 --fps 30 --write_to_movie --disable_caching \
+        manim-api/templates/number_line.py NumberLine
 
+Para uso via registry/API, a função :func:`get_source` retorna o código-fonte
+parametrizável como string.
+"""
 
-class NumberLineTemplate(ClipTemplate):
-    """Reta numérica horizontal com zoom suave para um intervalo destacado."""
+from manim import *
 
-    name = "number_line"
-    description = "A number line that zooms into a highlighted interval."
+_SCENE_SOURCE_TEMPLATE = """from manim import *
+from manim import config
 
-    @classmethod
-    def render(
-        cls,
-        width: int,
-        height: int,
-        background_color: str,
-        fps: int,
-        **kwargs: Any,
-    ) -> tuple[str, str]:
-        scene_name = "NumberLineZoomScene"
-        start = float(kwargs.get("start", 0))
-        end = float(kwargs.get("end", 10))
-        zoom_start = float(kwargs.get("zoom_start", 3))
-        zoom_end = float(kwargs.get("zoom_end", 5))
-        run_time = float(kwargs.get("run_time", 2.0))
-        line_color = kwargs.get("line_color", "#334155")
-        accent_color = kwargs.get("accent_color", "#EF4444")
+config.background_color = {background_color!r}
 
-        # Normaliza o intervalo de zoom.
-        if zoom_end <= zoom_start:
-            zoom_end = zoom_start + 1
-        if end <= start:
-            end = start + 10
-
-        code = f'''from manim import *
-
-class {scene_name}(Scene):
+class NumberLine(Scene):
     def construct(self):
-        start = {start}
-        end = {end}
-        zoom_start = {zoom_start}
-        zoom_end = {zoom_end}
-        line_color = "{line_color}"
-        accent_color = "{accent_color}"
+        start = {start!r}
+        end = {end!r}
+        zoom_start = {zoom_start!r}
+        zoom_end = {zoom_end!r}
+        line_color = {line_color!r}
+        accent_color = {accent_color!r}
 
         length = config.frame_width * 0.8
         range_size = end - start
@@ -94,8 +73,96 @@ class {scene_name}(Scene):
         self.wait(0.3)
         self.play(
             group.animate.scale(scale).shift(RIGHT * shift_x),
-            run_time={run_time},
+            run_time={run_time!r},
         )
         self.wait(0.5)
-'''
-        return scene_name, code
+"""
+
+_DEFAULT_START = 0.0
+_DEFAULT_END = 10.0
+_DEFAULT_ZOOM_START = 3.0
+_DEFAULT_ZOOM_END = 5.0
+_DEFAULT_LINE_COLOR = "#334155"
+_DEFAULT_ACCENT_COLOR = "#EF4444"
+_DEFAULT_RUN_TIME = 2.0
+
+
+def _normalize_interval(
+    start: float,
+    end: float,
+    zoom_start: float,
+    zoom_end: float,
+) -> tuple[float, float, float, float]:
+    """Garante que o intervalo de zoom esteja contido e válido."""
+    if end <= start:
+        end = start + 10.0
+    if zoom_end <= zoom_start:
+        zoom_end = zoom_start + 1.0
+    return start, end, zoom_start, zoom_end
+
+
+_DEFAULTS = {
+    "background_color": "#FFFFFF",
+    "start": _DEFAULT_START,
+    "end": _DEFAULT_END,
+    "zoom_start": _DEFAULT_ZOOM_START,
+    "zoom_end": _DEFAULT_ZOOM_END,
+    "line_color": _DEFAULT_LINE_COLOR,
+    "accent_color": _DEFAULT_ACCENT_COLOR,
+    "run_time": _DEFAULT_RUN_TIME,
+}
+
+exec(_SCENE_SOURCE_TEMPLATE.format(**_DEFAULTS), globals())
+
+
+def get_source(
+    background_color: str = _DEFAULTS["background_color"],
+    start: float = _DEFAULT_START,
+    end: float = _DEFAULT_END,
+    zoom_start: float = _DEFAULT_ZOOM_START,
+    zoom_end: float = _DEFAULT_ZOOM_END,
+    line_color: str = _DEFAULT_LINE_COLOR,
+    accent_color: str = _DEFAULT_ACCENT_COLOR,
+    run_time: float = _DEFAULT_RUN_TIME,
+    **kwargs,
+) -> tuple[str, str]:
+    """Retorna o nome da cena e o código-fonte parametrizado.
+
+    Parameters
+    ----------
+    background_color
+        Cor de fundo da cena (hex).
+    start, end
+        Extremos da reta numérica.
+    zoom_start, zoom_end
+        Intervalo destacado que receberá zoom.
+    line_color
+        Cor do eixo e ticks (hex).
+    accent_color
+        Cor do destaque de zoom (hex).
+    run_time
+        Duração da animação de zoom, em segundos.
+
+    Returns
+    -------
+    tuple[str, str]
+        ``(scene_name, source_code)`` pronto para renderização.
+    """
+    norm_start, norm_end, norm_zoom_start, norm_zoom_end = _normalize_interval(
+        float(kwargs.get("start", start)),
+        float(kwargs.get("end", end)),
+        float(kwargs.get("zoom_start", zoom_start)),
+        float(kwargs.get("zoom_end", zoom_end)),
+    )
+
+    params = {
+        "background_color": kwargs.get("background_color", background_color),
+        "start": norm_start,
+        "end": norm_end,
+        "zoom_start": norm_zoom_start,
+        "zoom_end": norm_zoom_end,
+        "line_color": kwargs.get("line_color", line_color),
+        "accent_color": kwargs.get("accent_color", accent_color),
+        "run_time": float(kwargs.get("run_time", run_time)),
+    }
+    return "NumberLine", _SCENE_SOURCE_TEMPLATE.format(**params)

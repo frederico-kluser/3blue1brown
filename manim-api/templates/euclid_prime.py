@@ -1,54 +1,51 @@
-"""Template: prova de Euclides sobre infinitude de primos."""
+"""Template: prova de Euclides sobre infinitude de primos.
+
+A cena :class:`EuclidPrime` pode ser renderizada standalone pelo Manim CLI:
+
+    manim render -r 600,400 --fps 30 --write_to_movie --disable_caching \
+        manim-api/templates/euclid_prime.py EuclidPrime
+
+Para uso via registry/API, a função :func:`get_source` retorna o código-fonte
+parametrizável como string.
+"""
 
 import math
-from typing import Any
 
-from .base import ClipTemplate
+from manim import *
+
+_DEFAULT_PRIMES = [2, 3, 5]
+_DEFAULT_PRIME_COLOR = "#EF4444"
+_DEFAULT_ACCENT_COLOR = "#3B82F6"
+
+_PRODUCT = math.prod(_DEFAULT_PRIMES)
+_NEW_NUMBER = _PRODUCT + 1
 
 
-class EuclidPrimeTemplate(ClipTemplate):
-    """Demonstração clássica: multiplique primos, some 1 e mostre um novo primo."""
+def _find_factor(primes: list[int], number: int) -> int:
+    """Retorna um fator primo de ``number`` que não esteja em ``primes``."""
+    for p in primes:
+        if number % p == 0:
+            return p
+    return number
 
-    name = "euclid_prime"
-    description = "Euclid's proof that multiplying primes and adding 1 yields a new prime."
 
-    @classmethod
-    def render(
-        cls,
-        width: int,
-        height: int,
-        background_color: str,
-        fps: int,
-        **kwargs: Any,
-    ) -> tuple[str, str]:
-        scene_name = "EuclidPrimeScene"
-        primes = kwargs.get("primes", [2, 3, 5])
-        if not isinstance(primes, list) or len(primes) == 0:
-            primes = [2, 3, 5]
+_SCENE_SOURCE_TEMPLATE = """from manim import *
+from manim import config
 
-        product = math.prod(primes)
-        new_number = product + 1
-        prime_color = kwargs.get("prime_color", "#EF4444")
-        accent_color = kwargs.get("accent_color", "#3B82F6")
+config.background_color = {background_color!r}
 
-        primes_str = " × ".join(str(p) for p in primes)
-        code = f'''from manim import *
-
-class {scene_name}(Scene):
+class EuclidPrime(Scene):
     def construct(self):
         primes = {primes!r}
-        product_expr = Text("{primes_str} + 1 = {new_number}", font_size=52, color="{accent_color}")
-        product_expr.shift(UP * 0.8)
+        new_prime = {new_number!r}
+        found = {found!r}
 
-        new_prime = {new_number}
-        # Encontra um fator primo diferente dos usados na multiplicação.
-        found = None
-        for p in primes:
-            if new_prime % p == 0:
-                found = p
-                break
-        if found is None:
-            found = new_prime
+        product_expr = Text(
+            "{product_expr}",
+            font_size=52,
+            color={accent_color!r},
+        )
+        product_expr.shift(UP * 0.8)
 
         note = Text(
             f"{{new_prime}} não é divisível por nenhum dos primos usados",
@@ -59,7 +56,7 @@ class {scene_name}(Scene):
         conclusion = Text(
             "Portanto existe um novo primo",
             font_size=40,
-            color="{prime_color}",
+            color={prime_color!r},
         )
         conclusion.next_to(note, DOWN, buff=0.6)
 
@@ -69,5 +66,63 @@ class {scene_name}(Scene):
         self.wait(0.4)
         self.play(FadeIn(conclusion), run_time=0.8)
         self.wait(0.5)
-'''
-        return scene_name, code
+"""
+
+# Valores padrão computados uma única vez para a cena standalone.
+_DEFAULT_SCENE_ARGS = {
+    "background_color": "#FFFFFF",
+    "primes": _DEFAULT_PRIMES,
+    "new_number": _NEW_NUMBER,
+    "found": _find_factor(_DEFAULT_PRIMES, _NEW_NUMBER),
+    "product_expr": " × ".join(str(p) for p in _DEFAULT_PRIMES) + f" + 1 = {_NEW_NUMBER}",
+    "prime_color": _DEFAULT_PRIME_COLOR,
+    "accent_color": _DEFAULT_ACCENT_COLOR,
+}
+
+exec(_SCENE_SOURCE_TEMPLATE.format(**_DEFAULT_SCENE_ARGS), globals())
+
+
+def get_source(
+    background_color: str = _DEFAULT_SCENE_ARGS["background_color"],
+    primes: list[int] | None = None,
+    prime_color: str = _DEFAULT_PRIME_COLOR,
+    accent_color: str = _DEFAULT_ACCENT_COLOR,
+    **kwargs,
+) -> tuple[str, str]:
+    """Retorna o nome da cena e o código-fonte parametrizado.
+
+    Parameters
+    ----------
+    background_color
+        Cor de fundo da cena (hex).
+    primes
+        Lista de primos iniciais usados na multiplicação.
+    prime_color
+        Cor do texto de conclusão (hex).
+    accent_color
+        Cor da expressão do produto (hex).
+
+    Returns
+    -------
+    tuple[str, str]
+        ``(scene_name, source_code)`` pronto para renderização.
+    """
+    prime_list = kwargs.get("primes", primes)
+    if not isinstance(prime_list, list) or len(prime_list) == 0:
+        prime_list = list(_DEFAULT_PRIMES)
+
+    product = math.prod(prime_list)
+    new_number = product + 1
+    found = _find_factor(prime_list, new_number)
+    product_expr = " × ".join(str(p) for p in prime_list) + f" + 1 = {new_number}"
+
+    params = {
+        "background_color": kwargs.get("background_color", background_color),
+        "primes": prime_list,
+        "new_number": new_number,
+        "found": found,
+        "product_expr": product_expr,
+        "prime_color": kwargs.get("prime_color", prime_color),
+        "accent_color": kwargs.get("accent_color", accent_color),
+    }
+    return "EuclidPrime", _SCENE_SOURCE_TEMPLATE.format(**params)

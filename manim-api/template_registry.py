@@ -1,10 +1,19 @@
-"""Registry de templates determinísticos de clipes Manim."""
+"""Registry de templates determinísticos de clipes Manim.
+
+Importa as cenas Manim standalone e suas classes ``ClipTemplate`` já
+encapsuladas pelo pacote ``templates``.
+"""
 
 from templates import (
+    BarChart,
     BarChartTemplate,
+    CircleGrowing,
     CircleGrowingTemplate,
+    EuclidPrime,
     EuclidPrimeTemplate,
+    NumberLine,
     NumberLineTemplate,
+    UlamSpiral,
     UlamSpiralTemplate,
 )
 
