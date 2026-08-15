@@ -1,11 +1,24 @@
 # Manim Video Generator API
 
-Backend FastAPI que converte descrições em linguagem natural em cenas Manim renderizadas com suporte a OpenAI GPT-5.1 Codex Max.
+Backend FastAPI que converte descrições em linguagem natural em cenas Manim renderizadas com suporte a OpenRouter.
 
 ## Visão geral
-- **Stack**: Python 3.11, FastAPI, Manim CE 0.19.0, Async OpenAI API.
+- **Stack**: Python 3.11, FastAPI, Manim CE 0.20.1, OpenRouter API (httpx).
 - **Fluxo**: descrição → LLM gera código → validação AST → renderização via CLI → resposta JSON/base64.
-- **Entrega**: Endpoints para health-check, geração de código e geração de vídeo (base64 ou arquivo).
+- **Entrega**: Endpoints para health-check, geração de código e geração de vídeo (base64 ou arquivo), além de CLI `render_clip.py` para integração headless.
+
+## Renderização headless de clipes
+
+O script `render_clip.py` na raiz do repositório gera um MP4 a partir de uma descrição, com cor de fundo casada ao slide:
+
+```bash
+export OPENROUTER_API_KEY=sk-or-v1-...
+export MANIM_HOME=/caminho/para/este/repo
+manim-api/venv/bin/python render_clip.py \
+  --json '{"prompt":"um círculo azul crescendo","background_color":"#FFFFFF","out_dir":"./clips"}'
+```
+
+O JSON de saída contém o caminho do MP4, o renderizador usado e a validação de fundo.
 
 ## Setup rápido via terminal
 1. Instale FFmpeg, Cairo, Pango, pkg-config, LaTeX e Cloudflared seguindo `TUTORIAL.md` (há receitas para macOS/Homebrew e Ubuntu/Debian). Confirme com `ffmpeg --version` e `latex --version`.
@@ -16,7 +29,7 @@ Backend FastAPI que converte descrições em linguagem natural em cenas Manim re
    source venv/bin/activate
    pip install --upgrade pip
    pip install -r requirements.txt
-   cp .env.example .env  # edite com sua OPENAI_API_KEY
+   cp .env.example .env  # edite com sua OPENROUTER_API_KEY
    ```
 3. Suba o servidor diretamente com o Uvicorn:
    ```bash
@@ -84,7 +97,7 @@ Consulte `TUTORIAL.md` para pipeline completo, testes end-to-end e configuraçã
 - Ambos funcionam em paralelo: clientes locais usam `http://localhost:8000` e usuários remotos usam o domínio fornecido pelo Cloudflare.
 
 ### Configurações principais
-- `.env` define `OPENAI_API_KEY`, `OPENAI_MODEL`, `RENDER_TIMEOUT`, `HOST`, `PORT`, `DEBUG`. A resolução é informada por request (campos opcionais `width`/`height`, padrão 1920x1080 em 16:9).
+- `.env` define `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` (padrão `deepseek/deepseek-v4-pro`), `OPENROUTER_BASE_URL`, `RENDER_TIMEOUT`, `DEFAULT_FPS`, `HOST`, `PORT`, `DEBUG`. A resolução é informada por request (campos opcionais `width`/`height`, padrão 1920x1080 em 16:9; para clipes de slide, 1280x720).
 - Dependências de sistema: FFmpeg, libcairo, pango, pkg-config e LaTeX mínimo.
 
 ### Coleção Postman
