@@ -11,7 +11,7 @@ from fastapi.responses import Response
 from config import get_settings
 from schemas import CodeResponse, HealthResponse, VideoRequest, VideoResponse
 from services.manim_executor import execute_manim
-from services.openai_service import generate_manim_code
+from services.openrouter_service import generate_manim_code
 
 logging.basicConfig(
     level=logging.INFO,
@@ -85,7 +85,7 @@ async def health() -> HealthResponse:
     return HealthResponse(
         status="healthy",
         manim_version=manim_version,
-        openai_model=settings.openai_model,
+        openai_model=settings.openrouter_model,
     )
 
 
