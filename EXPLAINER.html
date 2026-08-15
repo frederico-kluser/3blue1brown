@@ -153,7 +153,7 @@
   <header class="explainer-hero rounded-4 p-4 p-md-5 mb-4">
     <span class="badge badge-accent mb-3"><i class="bi bi-clipboard-data me-1"></i>Relatório de execução</span>
     <h1 class="display-6 fw-semibold text-white mb-2">O que aconteceu nesta execução</h1>
-    <p class="lead text-white-50 mb-3">Adicionar templates determinísticos de clipes Manim para geração sem tokens</p>
+    <p class="lead text-white-50 mb-3">Corrigir visibilidade dos templates Manim e adicionar teste visual</p>
     <div class="d-flex flex-wrap gap-2">
       <span class="badge badge-accent">v0.1.0</span>
       <span class="badge badge-soft"><i class="bi bi-calendar3 me-1"></i>2026-08-15</span>
@@ -213,7 +213,7 @@
     <div class="tab-pane fade show active" id="pane-visao" role="tabpanel"
          aria-labelledby="tab-visao" tabindex="0" data-print-title="Visão geral">
       <h2 class="h4 pane-title">Resumo da execução</h2>
-      <p class="text-body-secondary">Adicionar templates determinísticos de clipes Manim para geração sem tokens</p>
+      <p class="text-body-secondary">Corrigir visibilidade dos templates Manim e adicionar teste visual</p>
 
       <div class="alert alert-primary d-flex gap-2" role="alert">
         <i class="bi bi-info-circle-fill flex-shrink-0"></i>
@@ -225,7 +225,7 @@
           <div class="card h-100 text-center">
             <div class="card-body py-4">
               <i class="bi bi-layers fs-3 stat-value"></i>
-              <div class="display-6 fw-bold stat-value">4</div>
+              <div class="display-6 fw-bold stat-value">2</div>
               <div class="text-body-secondary small">Ondas executadas</div>
             </div>
           </div>
@@ -234,7 +234,7 @@
           <div class="card h-100 text-center">
             <div class="card-body py-4">
               <i class="bi bi-robot fs-3 stat-value"></i>
-              <div class="display-6 fw-bold stat-value">4</div>
+              <div class="display-6 fw-bold stat-value">2</div>
               <div class="text-body-secondary small">Sub-agentes</div>
             </div>
           </div>
@@ -243,7 +243,7 @@
           <div class="card h-100 text-center">
             <div class="card-body py-4">
               <i class="bi bi-git-commit fs-3 stat-value"></i>
-              <div class="display-6 fw-bold stat-value">5</div>
+              <div class="display-6 fw-bold stat-value">4</div>
               <div class="text-body-secondary small">Commits (squash)</div>
             </div>
           </div>
@@ -295,10 +295,8 @@
 <table class="table table-sm">
 <thead><tr><th>Onda</th><th>Worktree</th><th>Tarefa</th><th>Status</th></tr></thead>
 <tbody>
-<tr><td>1</td><td>onda1-templates-clips</td><td>Criar templates determinísticos Manim</td><td>concluído</td></tr>
-<tr><td>1b</td><td>onda1b-fix-template-imports</td><td>Tornar templates standalone e testar renderização</td><td>concluído</td></tr>
-<tr><td>2</td><td>onda2-render-template</td><td>render_clip.py renderiza templates sem API key</td><td>concluído</td></tr>
-<tr><td>3</td><td>onda3-docs-testes</td><td>Documentação, teste CLI e correção de extração JSON</td><td>concluído</td></tr>
+<tr><td>1</td><td>onda1-templates-visiveis</td><td>Cores escuras e maior contraste nos templates</td><td>concluído</td></tr>
+<tr><td>2</td><td>onda2-logs-testes-visuais</td><td>Logs estruturados e teste visual de templates</td><td>concluído</td></tr>
 </tbody>
 </table>
 
@@ -319,13 +317,10 @@
 <table class="table table-sm">
 <thead><tr><th>Arquivo</th><th>Mudança</th></tr></thead>
 <tbody>
-<tr><td><code>manim-api/templates/</code></td><td>5 templates Manim determinísticos</td></tr>
-<tr><td><code>manim-api/template_registry.py</code></td><td>Registry e auto-detecção por prompt</td></tr>
-<tr><td><code>render_clip.py</code></td><td>Suporte a <code>template</code> sem OPENROUTER_API_KEY</td></tr>
-<tr><td><code>manim-api/schemas.py</code></td><td>Campo <code>template</code> opcional</td></tr>
-<tr><td><code>manim-api/config.py</code></td><td>OPENROUTER_API_KEY opcional</td></tr>
-<tr><td><code>scripts/test_template_cli.py</code></td><td>Teste de templates sem API key</td></tr>
-<tr><td><code>AGENTS.md</code>, <code>manim-api/README.md</code></td><td>Documentação dos templates</td></tr>
+<tr><td><code>manim-api/templates/*.py</code></td><td>Cores escuras, elementos maiores</td></tr>
+<tr><td><code>render_clip.py</code></td><td>Logs estruturados em cada etapa</td></tr>
+<tr><td><code>scripts/test_template_visual.py</code></td><td>Teste visual de conteudo nao-branco</td></tr>
+<tr><td><code>AGENTS.md</code></td><td>Comandos dos testes</td></tr>
 </tbody>
 </table>
 
@@ -391,7 +386,7 @@
 
       <h2 class="h4 pane-title">Impacto</h2>
       <p>O que cada mudança significa para quem usa o deep-orchestrator:</p>
-<p>O 3blue1brown agora pode gerar clipes determinísticos para o presentation-generator sem custo de tokens. Isso permite decks completos com animações em cenários sem acesso a OpenRouter.</p>
+<p>Templates agora geram clipes visiveis no slide, eliminando o problema de "quadrados brancos".</p>
 
       <h2 class="h4 pane-title">Novas capacidades</h2>
       <!-- CAPABILITIES begin (não preenchido — conteúdo demo do template) -->
@@ -435,9 +430,8 @@
       <p>O orquestrador opera em autonomia total — nenhuma pergunta é feita ao usuário. Toda premissa assumida fica registrada aqui — para revisão e reprodutibilidade.</p>
 
 <ul>
-<li>Templates Manim podem ser renderizados sem OPENROUTER_API_KEY.</li>
-<li>Se nenhum <code>template</code> for informado e não houver API key, <code>render_clip.py</code> faz auto-detecção por palavras-chave.</li>
-<li>Modo LLM continua funcionando quando OPENROUTER_API_KEY está configurada.</li>
+<li>Threshold de 5% de pixels nao-brancos para garantir visibilidade.</li>
+<li>Cores escuras (#1E40AF, #B91C1C, #475569) sobre fundo branco.</li>
 </ul>
     </div>
 
