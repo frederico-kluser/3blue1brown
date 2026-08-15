@@ -77,13 +77,13 @@ class ClipRequest(VideoRequest):
     )
     width: int | None = Field(
         default=1280,
-        ge=320,
+        ge=120,
         le=3840,
         description="Largura do clipe em pixels; padrão 1280",
     )
     height: int | None = Field(
         default=720,
-        ge=320,
+        ge=120,
         le=3840,
         description="Altura do clipe em pixels; padrão 720",
     )
