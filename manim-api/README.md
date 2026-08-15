@@ -20,6 +20,53 @@ manim-api/venv/bin/python render_clip.py \
 
 O JSON de saída contém o caminho do MP4, o renderizador usado e a validação de fundo.
 
+### Templates determinísticos (sem API key)
+
+Quando `OPENROUTER_API_KEY` não está configurada, o CLI ainda pode renderizar clipes usando templates Manim pré-definidos. Basta passar o campo `template` no JSON:
+
+```bash
+export MANIM_HOME=/caminho/para/este/repo
+manim-api/venv/bin/python render_clip.py \
+  --json '{"template":"circle_growing","background_color":"#FFFFFF","out_dir":"./clips"}'
+```
+
+Templates disponíveis:
+
+| Template | Descrição |
+|----------|-----------|
+| `circle_growing` | Círculo colorido crescendo a partir do centro. |
+| `ulam_spiral` | Espiral de Ulam destacando números primos. |
+| `euclid_prime` | Prova de Euclides: multiplicar primos e somar 1 gera um novo primo. |
+| `bar_chart` | Gráfico de barras animado a partir de rótulos e valores. |
+| `number_line` | Reta numérica com zoom em um intervalo destacado. |
+
+Também é possível listar os templates via Python:
+
+```bash
+manim-api/venv/bin/python -c "from templates import list_templates; print(list_templates())"
+```
+
+#### Auto-detecção por prompt
+
+Se nenhum `template` for informado e não houver `OPENROUTER_API_KEY`, o CLI tenta inferir o template a partir das palavras-chave do campo `prompt`:
+
+```bash
+manim-api/venv/bin/python render_clip.py \
+  --json '{"prompt":"Show a growing blue circle","background_color":"#FFFFFF","out_dir":"./clips"}'
+```
+
+O matching é simples (palavras-chave em inglês, minúsculas). Exemplos de mapeamento:
+
+| Prompt contém... | Template selecionado |
+|------------------|----------------------|
+| `circle`, `grow`, `expand`, `pulse` | `circle_growing` |
+| `ulam`, `spiral`, `prime` | `ulam_spiral` |
+| `euclid`, `prime`, `proof` | `euclid_prime` |
+| `bar`, `chart`, `graph`, `data` | `bar_chart` |
+| `number line`, `zoom`, `interval` | `number_line` |
+
+Se nenhuma palavra-chave corresponder e não houver API key, o render falha com instruções claras.
+
 ## Setup rápido via terminal
 1. Instale FFmpeg, Cairo, Pango, pkg-config, LaTeX e Cloudflared seguindo `TUTORIAL.md` (há receitas para macOS/Homebrew e Ubuntu/Debian). Confirme com `ffmpeg --version` e `latex --version`.
 2. Crie e ative o ambiente virtual:

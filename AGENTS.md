@@ -5,6 +5,8 @@
 - **Health check**: `curl http://127.0.0.1:8000/`
 - **Generate video (curl)**: `curl -X POST http://127.0.0.1:8000/generate-video -H "Content-Type: application/json" -d '{"description": "Show a blue circle", "width": 1920, "height": 1080}'`
 - **Render clip via CLI**: `OPENROUTER_API_KEY=... MANIM_HOME=$(pwd) manim-api/venv/bin/python render_clip.py --json '{"prompt":"...","out_dir":"./clips"}'`
+- **Render clip via template (sem API key)**: `MANIM_HOME=$(pwd) manim-api/venv/bin/python render_clip.py --json '{"template":"circle_growing","background_color":"#FFFFFF","out_dir":"./clips"}'`
+- **List deterministic templates**: `manim-api/venv/bin/python -c "from templates import list_templates; print(list_templates())"`
 - **Validate clip background**: `manim-api/venv/bin/python manim-api/scripts/assert_bg.py <clip.mp4> --expect '#FFFFFF'`
 - **Check environment**: `manim-api/venv/bin/python manim-api/scripts/check_env.py`
 - **Run tests**: `cd manim-api && python -m pytest` (pytest in requirements.txt, no test files yet)
@@ -25,6 +27,8 @@
 - **Every render runs in a temp directory**: `BackgroundRectangle` monkey-patch and `config.background_color` are prepended to every scene. Video discovery scans recursively for newest MP4 by scene name.
 - **Never commit**: `.env`, `venv/`, `media/videos/`, `__pycache__/`
 - **Settings singleton**: `config.get_settings()` uses `@lru_cache` — changing `.env` requires server restart.
+- **Deterministic templates**: `render_clip.py` can render without `OPENROUTER_API_KEY` when a `template` is provided (`circle_growing`, `ulam_spiral`, `euclid_prime`, `bar_chart`, `number_line`).
+- **Template auto-detection**: if no `template` is set and `OPENROUTER_API_KEY` is missing, `render_clip.py` falls back to keyword matching on `prompt` and picks a deterministic template when enough keywords match.
 
 ## Skills
 Every task goes through `.agents/skills/project-router`. Catalog: `.agents/skills/catalog.md`
