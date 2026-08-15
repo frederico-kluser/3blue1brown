@@ -52,6 +52,10 @@ def _make_template(
             fps: int,
             **kwargs: Any,
         ) -> tuple[str, str]:
+            kwargs.setdefault("background_color", background_color)
+            kwargs.setdefault("width", width)
+            kwargs.setdefault("height", height)
+            kwargs.setdefault("fps", fps)
             return source_fn(**kwargs)
 
     _Template.__name__ = f"{name.title().replace('_', '')}Template"

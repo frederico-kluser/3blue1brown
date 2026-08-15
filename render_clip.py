@@ -26,6 +26,8 @@ from config import get_settings  # noqa: E402
 from schemas import ClipRequest, ClipResponse, BackgroundValidation  # noqa: E402
 from services.openrouter_service import generate_manim_code  # noqa: E402
 from services.manim_executor import execute_manim  # noqa: E402
+from templates import get_template, list_templates  # noqa: E402
+from template_registry import resolve_by_prompt  # noqa: E402
 
 logger = logging.getLogger("render_clip")
 
@@ -112,45 +114,82 @@ async def _render_clip(payload: dict) -> int:
         settings = get_settings()
     except Exception as exc:  # noqa: BLE001
         return _fail_response(
-            f"OPENROUTER_API_KEY não configurada: {exc}",
+            f"Erro ao carregar configurações: {exc}",
             EXIT_CONFIG_ERROR,
         )
 
-    if not settings.openrouter_api_key:
-        return _fail_response(
-            "OPENROUTER_API_KEY não configurada. Defina a variável de ambiente.",
-            EXIT_CONFIG_ERROR,
-        )
+    width = request.width or 1280
+    height = request.height or 720
+    fps = request.fps or settings.default_fps or 30
+    expected_hex = request.background_color or "#FFFFFF"
+    out_dir = _resolve_out_dir(request.out_dir)
 
-    # Geração de código
-    code_response = await generate_manim_code(
-        description=request.prompt,
-        width=request.width,
-        height=request.height,
-        request_id="clip-cli",
-    )
-    if not code_response.is_valid or not code_response.code:
+    # Decide entre template determinístico e geração via LLM
+    template_cls = None
+    template_source = None
+    if request.template:
+        try:
+            template_cls = get_template(request.template)
+            template_source = f"template:{request.template}"
+        except KeyError as exc:
+            available = ", ".join(list_templates())
+            return _fail_response(
+                f"Template não encontrado: {exc}. Disponíveis: {available}",
+                EXIT_CONFIG_ERROR,
+            )
+    elif not settings.openrouter_api_key and request.prompt:
+        resolved = resolve_by_prompt(request.prompt)
+        if resolved is not None:
+            template_cls = resolved
+            template_source = f"auto-detected:{resolved.name}"
+
+    if template_cls is not None:
+        scene_name, code = template_cls.render(
+            width=width,
+            height=height,
+            background_color=expected_hex,
+            fps=fps,
+        )
+    elif request.prompt:
+        if not settings.openrouter_api_key:
+            return _fail_response(
+                "OPENROUTER_API_KEY não configurada. Defina a variável de ambiente "
+                "ou use um template determinístico.",
+                EXIT_CONFIG_ERROR,
+            )
+
+        code_response = await generate_manim_code(
+            description=request.prompt,
+            width=width,
+            height=height,
+            request_id="clip-cli",
+        )
+        if not code_response.is_valid or not code_response.code:
+            return _fail_response(
+                f"Geração de código falhou: {code_response.validation_message}",
+                EXIT_GENERATION_FAILED,
+            )
+        scene_name = code_response.scene_name
+        code = code_response.code
+    else:
         return _fail_response(
-            f"Geração de código falhou: {code_response.validation_message}",
-            EXIT_GENERATION_FAILED,
+            "Forneça 'prompt' ou 'template' para renderizar o clipe.",
+            EXIT_CONFIG_ERROR,
         )
 
     # Renderização
-    width = request.width or 1280
-    height = request.height or 720
-    out_dir = _resolve_out_dir(request.out_dir)
-    mp4_name = f"{code_response.scene_name}.mp4"
+    mp4_name = f"{scene_name}.mp4"
     dest_path = out_dir / mp4_name
 
     render_result = execute_manim(
-        code=code_response.code,
-        scene_name=code_response.scene_name,
+        code=code,
+        scene_name=scene_name,
         width=width,
         height=height,
         timeout=settings.render_timeout,
         request_id="clip-cli",
-        background_color=request.background_color,
-        fps=request.fps,
+        background_color=expected_hex,
+        fps=fps,
         quality=request.quality,
         renderer_override=request.renderer,
         output_path=dest_path,
@@ -163,7 +202,6 @@ async def _render_clip(payload: dict) -> int:
         )
 
     # Validação de fundo
-    expected_hex = request.background_color or "#FFFFFF"
     assert_data = _run_assert_bg(dest_path, expected_hex, REPO_ROOT)
     if assert_data.get("exit_code") != 0 or not assert_data.get("passed"):
         return _fail_response(
@@ -178,7 +216,7 @@ async def _render_clip(payload: dict) -> int:
     response = ClipResponse(
         ok=True,
         mp4=str(dest_path),
-        scene=code_response.scene_name,
+        scene=scene_name,
         renderer=render_result.renderer or assert_data.get("renderer", "unknown"),
         background=BackgroundValidation(
             pedido=expected_hex,
@@ -189,7 +227,12 @@ async def _render_clip(payload: dict) -> int:
         duracao_s=duration_s,
         ms=elapsed_ms,
     )
-    print(response.model_dump_json(indent=2))
+    if template_source:
+        response_dict = response.model_dump()
+        response_dict["template"] = template_source
+        print(json.dumps(response_dict, indent=2))
+    else:
+        print(response.model_dump_json(indent=2))
     return EXIT_SUCCESS
 
 

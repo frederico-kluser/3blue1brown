@@ -69,11 +69,17 @@ class ClipRequest(VideoRequest):
         max_length=2000,
         description="Compatibilidade com VideoRequest; não usado pela CLI",
     )
-    prompt: str = Field(
-        ...,
+    prompt: str | None = Field(
+        default=None,
         min_length=1,
         max_length=2000,
         description="Descrição em linguagem natural do clipe desejado",
+    )
+    template: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=200,
+        description="Nome de um template determinístico a usar em vez de LLM",
     )
     width: int | None = Field(
         default=1280,
