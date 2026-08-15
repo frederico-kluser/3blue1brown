@@ -33,7 +33,7 @@ class NumberLine(Scene):
             return (v - center0) / range_size * length
 
         # Eixo principal.
-        axis = Line(LEFT * length / 2, RIGHT * length / 2, color=line_color, stroke_width=4)
+        axis = Line(LEFT * length / 2, RIGHT * length / 2, color=line_color, stroke_width=5)
 
         # Ticks e labels principais.
         ticks = VGroup()
@@ -41,8 +41,13 @@ class NumberLine(Scene):
         for i in range(steps + 1):
             t = start + i * range_size / steps
             x = value_to_x(t)
-            tick = Line(DOWN * 0.15, UP * 0.15, color=line_color).shift(RIGHT * x)
-            label = Text(str(int(t) if t == int(t) else round(t, 1)), font_size=22)
+            tick = Line(DOWN * 0.18, UP * 0.18, color=line_color, stroke_width=3).shift(RIGHT * x)
+            label = Text(
+                str(int(t) if t == int(t) else round(t, 1)),
+                font_size=26,
+                color=line_color,
+                weight=BOLD,
+            )
             label.next_to(tick, DOWN, buff=0.2)
             ticks.add(tick, label)
 
@@ -50,12 +55,17 @@ class NumberLine(Scene):
         zs_x = value_to_x(zoom_start)
         ze_x = value_to_x(zoom_end)
         bracket = Line(
-            RIGHT * zs_x + UP * 0.35,
-            RIGHT * ze_x + UP * 0.35,
+            RIGHT * zs_x + UP * 0.40,
+            RIGHT * ze_x + UP * 0.40,
             color=accent_color,
-            stroke_width=6,
+            stroke_width=7,
         )
-        zoom_label = Text(f"[{{zoom_start}}, {{zoom_end}}]", font_size=26, color=accent_color)
+        zoom_label = Text(
+            f"[{{zoom_start}}, {{zoom_end}}]",
+            font_size=30,
+            color=accent_color,
+            weight=BOLD,
+        )
         zoom_label.next_to(bracket, UP, buff=0.15)
 
         group = VGroup(axis, ticks, bracket, zoom_label)
@@ -83,7 +93,7 @@ _DEFAULT_END = 10.0
 _DEFAULT_ZOOM_START = 3.0
 _DEFAULT_ZOOM_END = 5.0
 _DEFAULT_LINE_COLOR = "#334155"
-_DEFAULT_ACCENT_COLOR = "#EF4444"
+_DEFAULT_ACCENT_COLOR = "#B91C1C"
 _DEFAULT_RUN_TIME = 2.0
 
 

@@ -20,9 +20,9 @@ class CircleGrowing(Scene):
     def construct(self):
         color = {color!r}
         run_time = {run_time!r}
-        target = min(config.frame_width, config.frame_height) * 0.35
-        circle = Circle(radius=0.05, color=color)
-        circle.set_fill(color, opacity=0.5)
+        target = min(config.frame_width, config.frame_height) * 0.45
+        circle = Circle(radius=0.05, color=color, stroke_width=4)
+        circle.set_fill(color, opacity=0.9)
 
         scale_factor = target / 0.05
         self.play(circle.animate.scale(scale_factor), run_time=run_time)
@@ -31,7 +31,7 @@ class CircleGrowing(Scene):
 
 _DEFAULTS = {
     "background_color": "#FFFFFF",
-    "color": "#3B82F6",
+    "color": "#1E40AF",
     "run_time": 2.0,
 }
 

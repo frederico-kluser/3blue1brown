@@ -40,18 +40,26 @@ class BarChart(Scene):
             bar = Rectangle(
                 width=bar_width,
                 height=bar_height,
-                color=color,
-                fill_opacity=0.85,
+                color="#1E293B",
+                fill_color=color,
+                fill_opacity=0.95,
+                stroke_width=2,
             )
-            bar.set_fill(color, opacity=0.85)
+            bar.set_fill(color, opacity=0.95)
+            bar.set_stroke("#1E293B", width=2)
             x = -available_width / 2 + spacing + bar_width / 2 + i * (bar_width + spacing)
             y = -config.frame_height / 2 + bar_height / 2 + 0.3
             bar.move_to([x, y, 0])
 
-            value_label = Text(str(int(value) if value == int(value) else value), font_size=24)
+            value_label = Text(
+                str(int(value) if value == int(value) else value),
+                font_size=28,
+                color="#1E293B",
+                weight=BOLD,
+            )
             value_label.next_to(bar, UP, buff=0.1)
 
-            name_label = Text(label, font_size=28)
+            name_label = Text(label, font_size=30, color="#334155", weight=BOLD)
             name_label.next_to(bar, DOWN, buff=0.15)
 
             group = VGroup(bar, value_label, name_label)
@@ -64,7 +72,7 @@ class BarChart(Scene):
 
 _DEFAULT_LABELS = ["A", "B", "C"]
 _DEFAULT_VALUES = [3, 7, 5]
-_DEFAULT_COLORS = ["#3B82F6", "#10B981", "#F59E0B"]
+_DEFAULT_COLORS = ["#1E40AF", "#15803D", "#B91C1C"]
 _DEFAULT_RUN_TIME = 2.5
 
 

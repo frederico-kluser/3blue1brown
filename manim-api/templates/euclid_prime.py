@@ -14,8 +14,8 @@ import math
 from manim import *
 
 _DEFAULT_PRIMES = [2, 3, 5]
-_DEFAULT_PRIME_COLOR = "#EF4444"
-_DEFAULT_ACCENT_COLOR = "#3B82F6"
+_DEFAULT_PRIME_COLOR = "#B91C1C"
+_DEFAULT_ACCENT_COLOR = "#1E40AF"
 
 _PRODUCT = math.prod(_DEFAULT_PRIMES)
 _NEW_NUMBER = _PRODUCT + 1
@@ -42,24 +42,37 @@ class EuclidPrime(Scene):
 
         product_expr = Text(
             "{product_expr}",
-            font_size=52,
+            font_size=56,
             color={accent_color!r},
+            weight=BOLD,
         )
-        product_expr.shift(UP * 0.8)
+        product_expr.shift(UP * 0.9)
 
         note = Text(
             f"{{new_prime}} não é divisível por nenhum dos primos usados",
-            font_size=28,
+            font_size=34,
+            color="#1E293B",
+            weight=BOLD,
         )
-        note.next_to(product_expr, DOWN, buff=0.6)
+        note.next_to(product_expr, DOWN, buff=0.8)
 
         conclusion = Text(
             "Portanto existe um novo primo",
-            font_size=40,
+            font_size=48,
             color={prime_color!r},
+            weight=BOLD,
         )
-        conclusion.next_to(note, DOWN, buff=0.6)
+        conclusion.next_to(note, DOWN, buff=0.8)
 
+        content = VGroup(product_expr, note, conclusion)
+        bg = BackgroundRectangle(
+            content,
+            color="#E2E8F0",
+            fill_opacity=1.0,
+            buff=0.5,
+            corner_radius=0.2,
+        )
+        self.add(bg)
         self.play(Write(product_expr), run_time=1.5)
         self.wait(0.4)
         self.play(FadeIn(note), run_time=0.8)

@@ -57,7 +57,7 @@ class UlamSpiral(Scene):
 
         max_coord = max(max(abs(cx), abs(cy)) for cx, cy in coords.values())
         span = 2 * max_coord + 2
-        scale = min(config.frame_width, config.frame_height) / span
+        scale = min(config.frame_width, config.frame_height) * 0.88 / span
 
         dots = VGroup()
         for i in range(1, n + 1):
@@ -65,7 +65,7 @@ class UlamSpiral(Scene):
             color = colors["prime"] if is_prime(i) else colors["composite"]
             dot = Dot(
                 point=RIGHT * cx * scale + UP * cy * scale,
-                radius=0.06 * scale,
+                radius=max(0.14 * scale, 0.08),
                 color=color,
             )
             dots.add(dot)
@@ -77,8 +77,8 @@ class UlamSpiral(Scene):
 _DEFAULTS = {
     "background_color": "#FFFFFF",
     "n": 200,
-    "prime_color": "#EF4444",
-    "composite_color": "#94A3B8",
+    "prime_color": "#B91C1C",
+    "composite_color": "#475569",
     "run_time": 2.5,
 }
 
