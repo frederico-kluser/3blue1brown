@@ -6,6 +6,8 @@
 - **Generate video (curl)**: `curl -X POST http://127.0.0.1:8000/generate-video -H "Content-Type: application/json" -d '{"description": "Show a blue circle", "width": 1920, "height": 1080}'`
 - **Render clip via CLI**: `OPENROUTER_API_KEY=... MANIM_HOME=$(pwd) manim-api/venv/bin/python render_clip.py --json '{"prompt":"...","out_dir":"./clips"}'`
 - **Render clip via template (sem API key)**: `MANIM_HOME=$(pwd) manim-api/venv/bin/python render_clip.py --json '{"template":"circle_growing","background_color":"#FFFFFF","out_dir":"./clips"}'`
+- **Run visual template test (sem API key)**: `MANIM_HOME=$(pwd) manim-api/venv/bin/python scripts/test_template_visual.py`
+- **Run CLI template test (sem API key)**: `MANIM_HOME=$(pwd) manim-api/venv/bin/python scripts/test_template_cli.py`
 - **List deterministic templates**: `manim-api/venv/bin/python -c "from templates import list_templates; print(list_templates())"`
 - **Validate clip background**: `manim-api/venv/bin/python manim-api/scripts/assert_bg.py <clip.mp4> --expect '#FFFFFF'`
 - **Check environment**: `manim-api/venv/bin/python manim-api/scripts/check_env.py`

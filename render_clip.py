@@ -39,6 +39,7 @@ EXIT_BACKGROUND_MISMATCH = 4
 
 
 def _fail_response(message: str, exit_code: int) -> int:
+    logger.error("%s (exit_code=%d)", message, exit_code)
     response = ClipResponse(ok=False, error=message)
     print(response.model_dump_json(indent=2))
     return exit_code
@@ -104,6 +105,7 @@ def _video_duration(mp4_path: Path) -> float:
 
 async def _render_clip(payload: dict) -> int:
     start_ms = int(time.time() * 1000)
+    logger.info("Recebendo request para renderização de clipe")
 
     try:
         request = ClipRequest(**payload)
@@ -123,14 +125,26 @@ async def _render_clip(payload: dict) -> int:
     fps = request.fps or settings.default_fps or 30
     expected_hex = request.background_color or "#FFFFFF"
     out_dir = _resolve_out_dir(request.out_dir)
+    logger.info(
+        "Request parseado: template=%s prompt=%s width=%d height=%d fps=%d bg=%s out_dir=%s",
+        request.template,
+        request.prompt[:80] if request.prompt else None,
+        width,
+        height,
+        fps,
+        expected_hex,
+        out_dir,
+    )
 
     # Decide entre template determinístico e geração via LLM
     template_cls = None
     template_source = None
     if request.template:
+        logger.info("Escolhendo template determinístico: %s", request.template)
         try:
             template_cls = get_template(request.template)
             template_source = f"template:{request.template}"
+            logger.info("Template resolvido: %s", template_source)
         except KeyError as exc:
             available = ", ".join(list_templates())
             return _fail_response(
@@ -138,10 +152,14 @@ async def _render_clip(payload: dict) -> int:
                 EXIT_CONFIG_ERROR,
             )
     elif not settings.openrouter_api_key and request.prompt:
+        logger.info("OPENROUTER_API_KEY ausente; tentando auto-detecção de template pelo prompt")
         resolved = resolve_by_prompt(request.prompt)
         if resolved is not None:
             template_cls = resolved
             template_source = f"auto-detected:{resolved.name}"
+            logger.info("Template auto-detectado: %s", template_source)
+        else:
+            logger.info("Nenhum template correspondente ao prompt; requer OPENROUTER_API_KEY")
 
     if template_cls is not None:
         scene_name, code = template_cls.render(
@@ -180,6 +198,7 @@ async def _render_clip(payload: dict) -> int:
     # Renderização
     mp4_name = f"{scene_name}.mp4"
     dest_path = out_dir / mp4_name
+    logger.info("Iniciando render: scene=%s renderer=%s dest=%s", scene_name, request.renderer or "default", dest_path)
 
     render_result = execute_manim(
         code=code,
@@ -200,9 +219,17 @@ async def _render_clip(payload: dict) -> int:
             f"Render falhou: {render_result.error or 'unknown error'}",
             EXIT_RENDER_FAILED,
         )
+    logger.info("Render finalizado com sucesso: %s", dest_path)
 
     # Validação de fundo
+    logger.info("Validando fundo: esperado=%s", expected_hex)
     assert_data = _run_assert_bg(dest_path, expected_hex, REPO_ROOT)
+    logger.info(
+        "Resultado da validação de fundo: desvio=%s uniformidade=%s%% passed=%s",
+        assert_data.get("max_deviation"),
+        assert_data.get("uniformity"),
+        assert_data.get("passed"),
+    )
     if assert_data.get("exit_code") != 0 or not assert_data.get("passed"):
         return _fail_response(
             f"Fundo fora da tolerância: desvio={assert_data.get('max_deviation')}, "
@@ -212,6 +239,7 @@ async def _render_clip(payload: dict) -> int:
 
     duration_s = _video_duration(dest_path)
     elapsed_ms = int(time.time() * 1000) - start_ms
+    logger.info("Duração do clipe: %.3fs (tempo total: %dms)", duration_s, elapsed_ms)
 
     response = ClipResponse(
         ok=True,
@@ -233,6 +261,7 @@ async def _render_clip(payload: dict) -> int:
         print(json.dumps(response_dict, indent=2))
     else:
         print(response.model_dump_json(indent=2))
+    logger.info("Renderização concluída com sucesso em %dms", elapsed_ms)
     return EXIT_SUCCESS
 
 
@@ -242,6 +271,7 @@ def main() -> int:
         format="[%(name)s] %(message)s",
         stream=sys.stderr,
     )
+    logger.info("Iniciando render_clip")
 
     parser = argparse.ArgumentParser(description="Renderiza um clipe Manim com fundo casado.")
     parser.add_argument(

@@ -65,7 +65,7 @@ class UlamSpiral(Scene):
             color = colors["prime"] if is_prime(i) else colors["composite"]
             dot = Dot(
                 point=RIGHT * cx * scale + UP * cy * scale,
-                radius=max(0.14 * scale, 0.08),
+                radius=max(0.22 * scale, 0.10),
                 color=color,
             )
             dots.add(dot)
@@ -76,7 +76,7 @@ class UlamSpiral(Scene):
 
 _DEFAULTS = {
     "background_color": "#FFFFFF",
-    "n": 200,
+    "n": 350,
     "prime_color": "#B91C1C",
     "composite_color": "#475569",
     "run_time": 2.5,

@@ -33,7 +33,7 @@ class NumberLine(Scene):
             return (v - center0) / range_size * length
 
         # Eixo principal.
-        axis = Line(LEFT * length / 2, RIGHT * length / 2, color=line_color, stroke_width=5)
+        axis = Line(LEFT * length / 2, RIGHT * length / 2, color=line_color, stroke_width=10)
 
         # Ticks e labels principais.
         ticks = VGroup()
@@ -41,10 +41,10 @@ class NumberLine(Scene):
         for i in range(steps + 1):
             t = start + i * range_size / steps
             x = value_to_x(t)
-            tick = Line(DOWN * 0.18, UP * 0.18, color=line_color, stroke_width=3).shift(RIGHT * x)
+            tick = Line(DOWN * 0.28, UP * 0.28, color=line_color, stroke_width=7).shift(RIGHT * x)
             label = Text(
                 str(int(t) if t == int(t) else round(t, 1)),
-                font_size=26,
+                font_size=44,
                 color=line_color,
                 weight=BOLD,
             )
@@ -54,21 +54,29 @@ class NumberLine(Scene):
         # Destaque do intervalo de zoom.
         zs_x = value_to_x(zoom_start)
         ze_x = value_to_x(zoom_end)
+        zoom_band = Rectangle(
+            width=max(0.1, ze_x - zs_x),
+            height=1.4,
+            fill_color=accent_color,
+            fill_opacity=0.18,
+            stroke_width=0,
+        )
+        zoom_band.move_to(RIGHT * (zs_x + ze_x) / 2)
         bracket = Line(
-            RIGHT * zs_x + UP * 0.40,
-            RIGHT * ze_x + UP * 0.40,
+            RIGHT * zs_x + UP * 0.52,
+            RIGHT * ze_x + UP * 0.52,
             color=accent_color,
-            stroke_width=7,
+            stroke_width=12,
         )
         zoom_label = Text(
             f"[{{zoom_start}}, {{zoom_end}}]",
-            font_size=30,
+            font_size=46,
             color=accent_color,
             weight=BOLD,
         )
         zoom_label.next_to(bracket, UP, buff=0.15)
 
-        group = VGroup(axis, ticks, bracket, zoom_label)
+        group = VGroup(axis, ticks, zoom_band, bracket, zoom_label)
         group.move_to(ORIGIN)
 
         # Cálculo do zoom.
