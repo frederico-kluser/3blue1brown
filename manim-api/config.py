@@ -3,9 +3,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # OpenAI
-    openai_api_key: str
-    openai_model: str = "gpt-5.1-codex-max"
+    # OpenRouter
+    openrouter_api_key: str
+    openrouter_model: str = "deepseek/deepseek-v4-pro"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     # App
     app_name: str = "Manim Video Generator API"
@@ -15,6 +16,7 @@ class Settings(BaseSettings):
     render_timeout: int = 120
     manim_renderer: str = "auto"
     manim_renderer_fallback: bool = True
+    default_fps: int = 30
 
     # Server
     host: str = "0.0.0.0"

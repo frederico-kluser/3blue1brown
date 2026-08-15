@@ -1,10 +1,15 @@
+"""Serviço de geração de código Manim via OpenRouter (/chat/completions).
+
+Mesma superfície pública de openai_service.py para facilitar substituição.
+"""
+
 import ast
 import json
 import logging
 import re
 from typing import Any, Tuple
 
-from openai import AsyncOpenAI
+import httpx
 
 from config import get_settings
 from prompts import (
@@ -15,8 +20,7 @@ from prompts import (
 from schemas import CodeResponse
 
 settings = get_settings()
-client = AsyncOpenAI(api_key=settings.openai_api_key)
-logger = logging.getLogger("manim_api.openai")
+logger = logging.getLogger("manim_api.openrouter")
 
 DANGEROUS_IMPORTS = {
     "os",
@@ -52,6 +56,9 @@ COLOR_FALLBACKS = {
     "CYAN_E": "TEAL_E",
 }
 
+OPENROUTER_BASE_URL = getattr(settings, "openrouter_base_url", "https://openrouter.ai/api/v1")
+OPENROUTER_MODEL = getattr(settings, "openrouter_model", "deepseek/deepseek-v4-pro")
+
 
 def _orientation_from_resolution(width: int, height: int) -> str:
     if width > height:
@@ -68,7 +75,7 @@ def _build_video_spec_notes(width: int, height: int) -> Tuple[int, int, str]:
     notes = (
         "[VIDEO SPECIFICATIONS]\n"
         f"- Resolution: {width}x{height} px\n"
-        "- Frame rate: 60 fps (render de alta qualidade)\n"
+        f"- Frame rate: {getattr(settings, 'default_fps', 30)} fps\n"
         f"- Orientation: {orientation}; distribua objetos para ocupar todo o espaço visível\n"
         "- Ajuste proporções, escalas e posicionamento de texto/imagens para essa geometria"
     )
@@ -167,22 +174,12 @@ def _ensure_str(value: Any, fallback: str) -> str:
     return str(value)
 
 
-def _extract_text(response: Any) -> str:
-    text = getattr(response, "output_text", None)
-    if text:
-        return text
-
-    collected: list[str] = []
-    for item in getattr(response, "output", []) or []:
-        content = getattr(item, "content", None)
-        if isinstance(content, list):
-            for chunk in content:
-                chunk_text = getattr(chunk, "text", None)
-                if chunk_text:
-                    collected.append(chunk_text)
-        elif isinstance(content, str):
-            collected.append(content)
-    return "".join(collected)
+def _extract_content(response: dict) -> str:
+    choices = response.get("choices") or []
+    if not choices:
+        return ""
+    message = choices[0].get("message") or {}
+    return message.get("content", "")
 
 
 def _is_background_color_assignment(node: ast.Assign) -> bool:
@@ -191,7 +188,6 @@ def _is_background_color_assignment(node: ast.Assign) -> bool:
         return False
     target = node.targets[0]
     if isinstance(target, ast.Attribute):
-        # config.background_color ou self.camera.background_color
         if target.attr == "background_color":
             if isinstance(target.value, ast.Name) and target.value.id == "config":
                 return True
@@ -267,6 +263,35 @@ def sanitize_code(code: str, request_id: str | None = None) -> str:
     return sanitized
 
 
+async def _chat_completion(messages: list[dict], request_id: str) -> dict:
+    """Chama OpenRouter /chat/completions."""
+    api_key = getattr(settings, "openrouter_api_key", None)
+    if not api_key:
+        raise RuntimeError("OPENROUTER_API_KEY não configurada")
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": OPENROUTER_MODEL,
+        "messages": messages,
+        "temperature": 0.2,
+        "top_p": 0.95,
+    }
+
+    url = f"{OPENROUTER_BASE_URL}/chat/completions"
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        response = await client.post(url, headers=headers, json=payload)
+
+    if response.status_code == 401:
+        raise RuntimeError("OPENROUTER_API_KEY inválida (401)")
+    if response.status_code == 429:
+        raise RuntimeError("Rate limit do OpenRouter (429) — aguarde e tente novamente")
+    response.raise_for_status()
+    return response.json()
+
+
 async def optimize_prompt(
     description: str,
     video_spec: str | None = None,
@@ -276,15 +301,11 @@ async def optimize_prompt(
     try:
         logger.info("[%s] Optimizing prompt", rid)
         messages = build_prompt_optimizer_messages(description, video_spec)
-        response = await client.responses.create(
-            model=settings.openai_model,
-            input=messages,
-            reasoning={"effort": "xhigh"},
-        )
-        content = _extract_text(response)
-        data = _safe_load_json(_strip_code_fence(content))
-        improved = _ensure_str(data.get("improved_prompt"), description)
-        resource_plan = _ensure_str(data.get("resource_plan"), DEFAULT_RESOURCE_NOTES)
+        data = await _chat_completion(messages, rid)
+        content = _extract_content(data)
+        parsed = _safe_load_json(_strip_code_fence(content))
+        improved = _ensure_str(parsed.get("improved_prompt"), description)
+        resource_plan = _ensure_str(parsed.get("resource_plan"), DEFAULT_RESOURCE_NOTES)
         logger.info("[%s] Prompt optimization completed", rid)
         return improved.strip(), resource_plan.strip()
     except Exception as exc:
@@ -318,13 +339,8 @@ async def generate_manim_code(
             logger.info("[%s] Code generation attempt %s/%s", rid, attempt, MAX_CODE_ATTEMPTS)
 
             try:
-                response = await client.responses.create(
-                    model=settings.openai_model,
-                    input=messages,
-                    reasoning={"effort": "xhigh"},
-                )
-
-                raw_response = _extract_text(response)
+                data = await _chat_completion(messages, rid)
+                raw_response = _extract_content(data)
                 code = extract_code(raw_response)
                 code = sanitize_code(code, rid)
             except Exception as exc:  # Erros durante chamada ou parsing

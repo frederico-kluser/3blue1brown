@@ -1,6 +1,7 @@
 import base64
 import logging
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -15,10 +16,21 @@ logger = logging.getLogger("manim_api.manim_executor")
 
 
 def _resolve_texlive_bin() -> Optional[Path]:
-    texlive_root = Path.home() / "texlive"
-    if not texlive_root.exists():
-        return None
-    candidates = sorted(texlive_root.glob("*/bin/*"), reverse=True)
+    """Resolve o diretório binário do TeX Live ou TinyTeX."""
+    home = Path.home()
+    candidates: list[Path] = []
+
+    texlive_root = home / "texlive"
+    if texlive_root.exists():
+        candidates.extend(sorted(texlive_root.glob("*/bin/*"), reverse=True))
+
+    tinytex_root = home / ".TinyTeX" / "bin"
+    if tinytex_root.exists():
+        # TinyTeX organiza arquiteturas em subpastas de bin/ (ex.: x86_64-linux)
+        for dvisvgm in sorted(tinytex_root.rglob("dvisvgm"), reverse=True):
+            if dvisvgm.exists() and os.access(dvisvgm, os.X_OK):
+                candidates.append(dvisvgm.parent)
+
     for candidate in candidates:
         if candidate.is_dir():
             return candidate
@@ -35,6 +47,19 @@ if not hasattr(BackgroundRectangle, "tex_string"):
 """
 
 
+def _build_scene_preamble(background_color: str | None) -> str:
+    """Monta o preâmbulo com patch e cor de fundo fixa."""
+    color = background_color or "#FFFFFF"
+    # Garante formato #RRGGBB
+    if not color.startswith("#") or len(color) != 7:
+        color = "#FFFFFF"
+    return (
+        f"{BACKGROUND_RECTANGLE_PATCH}\n"
+        f"from manim import config\n"
+        f"config.background_color = '{color}'\n\n"
+    )
+
+
 @dataclass
 class RenderResult:
     success: bool
@@ -43,6 +68,7 @@ class RenderResult:
     stdout: str = ""
     stderr: str = ""
     error: Optional[str] = None
+    renderer: Optional[str] = None
 
 
 def find_video(media_dir: Path, scene_name: str) -> Optional[Path]:
@@ -61,9 +87,19 @@ def find_video(media_dir: Path, scene_name: str) -> Optional[Path]:
 
 def _build_env() -> dict:
     env = os.environ.copy()
+    paths: list[str] = []
+
+    # Adiciona o binário do venv corrente (onde manim e ffmpeg do vivem)
+    venv_bin = Path(sys.executable).parent
+    if venv_bin.exists():
+        paths.append(str(venv_bin))
+
     if TEXLIVE_BIN and TEXLIVE_BIN.exists():
+        paths.append(str(TEXLIVE_BIN))
+
+    if paths:
         current_path = env.get("PATH", "")
-        env["PATH"] = f"{TEXLIVE_BIN}:{current_path}" if current_path else str(TEXLIVE_BIN)
+        env["PATH"] = ":".join(paths + ([current_path] if current_path else []))
     return env
 
 
@@ -193,6 +229,7 @@ def _run_manim_render(
         video_base64=video_b64,
         stdout=result.stdout,
         stderr=result.stderr,
+        renderer=renderer,
     )
 
 
@@ -203,21 +240,28 @@ def execute_manim(
     height: int = 1080,
     timeout: int = 120,
     request_id: str | None = None,
+    background_color: str | None = None,
+    fps: int | None = None,
+    quality: str | None = None,
+    renderer_override: str | None = None,
+    output_path: str | Path | None = None,
 ) -> RenderResult:
     rid = request_id or "no-request-id"
+    fps = fps if fps else 60
     logger.info(
-        "[%s] Starting Manim render (scene=%s, resolution=%dx%d, timeout=%ss)",
+        "[%s] Starting Manim render (scene=%s, resolution=%dx%d, fps=%d, timeout=%ss)",
         rid,
         scene_name,
         width,
         height,
+        fps,
         timeout,
     )
     with tempfile.TemporaryDirectory(prefix="manim_") as tmpdir:
         work_dir = Path(tmpdir)
         script_path = work_dir / "scene.py"
         media_dir = work_dir / "media"
-        script_path.write_text(f"{BACKGROUND_RECTANGLE_PATCH}\n\n{code}")
+        script_path.write_text(_build_scene_preamble(background_color) + code)
         logger.debug("[%s] Scene script written to %s", rid, script_path)
 
         base_cmd = [
@@ -226,20 +270,30 @@ def execute_manim(
             "-r",
             f"{width},{height}",
             "--fps",
-            "60",
+            str(fps),
             "--media_dir",
             str(media_dir),
             "--disable_caching",
             "--write_to_movie",
-            str(script_path),
-            scene_name,
         ]
+        if quality:
+            quality_flag = f"-q{quality}"
+            base_cmd.append(quality_flag)
+        base_cmd.extend([str(script_path), scene_name])
 
-        renderer = _resolve_renderer()
+        renderer = "auto"
+        if renderer_override in ("cairo", "opengl"):
+            renderer = renderer_override
+        elif settings.manim_renderer in ("cairo", "opengl"):
+            renderer = settings.manim_renderer
+        else:
+            renderer = "opengl" if _detect_gpu_renderer() else "cairo"
+
         logger.info(
-            "[%s] Renderer selected: %s (config manim_renderer=%s)",
+            "[%s] Renderer selected: %s (override=%s, config=%s)",
             rid,
             renderer,
+            renderer_override,
             settings.manim_renderer,
         )
 
@@ -263,5 +317,13 @@ def execute_manim(
             cmd = list(base_cmd)
             logger.info("[%s] Executing fallback command: %s", rid, " ".join(cmd))
             result = _run_manim_render(cmd, work_dir, media_dir, scene_name, timeout, rid, "cairo")
+
+        if result.success and result.video_path and output_path:
+            dest = Path(output_path)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(result.video_path, dest)
+            result.video_path = str(dest)
+            result.video_base64 = base64.b64encode(dest.read_bytes()).decode("utf-8")
+            logger.info("[%s] Video copied to %s", rid, dest)
 
         return result

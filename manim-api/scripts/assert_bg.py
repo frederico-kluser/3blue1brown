@@ -112,29 +112,9 @@ def _sample_region(frame_path: Path) -> tuple[int, int]:
     return int(parts[0]), int(parts[1])
 
 
-def _analyze(frame_path: Path, expected_rgb: tuple[int, int, int]) -> dict:
-    """Amostra uma região central de fundo e calcula desvios."""
-    try:
-        from PIL import Image
-    except ImportError as exc:
-        raise RuntimeError(f"PIL não disponível: {exc}")
-
-    img = Image.open(frame_path)
-    width, height = img.size
-
-    # Região central de 300x200 (ou metade do frame se menor)
-    sample_w = min(300, width // 2)
-    sample_h = min(200, height // 2)
-    left = (width - sample_w) // 2
-    top = (height - sample_h) // 2
-    right = left + sample_w
-    bottom = top + sample_h
-
-    region = img.crop((left, top, right, bottom))
-    pixels = list(region.get_flattened_data())
+def _analyze_region(pixels: list[tuple[int, int, int]], expected_rgb: tuple[int, int, int]) -> dict:
+    """Analisa uma lista de pixels e retorna estatísticas."""
     total = len(pixels)
-
-    # Cor dominante
     counts: dict[tuple[int, int, int], int] = {}
     for pixel in pixels:
         counts[pixel] = counts.get(pixel, 0) + 1
@@ -143,31 +123,76 @@ def _analyze(frame_path: Path, expected_rgb: tuple[int, int, int]) -> dict:
     dominant_count = counts[dominant]
     distinct = len(counts)
     uniformity = dominant_count / total if total else 0.0
-
     deviation = tuple(abs(d - e) for d, e in zip(dominant, expected_rgb))
 
     return {
-        "frame_size": {"width": width, "height": height},
-        "sample_region": {
-            "left": left,
-            "top": top,
-            "width": sample_w,
-            "height": sample_h,
-        },
         "dominant": {
             "rgb": list(dominant),
             "hex": f"#{dominant[0]:02x}{dominant[1]:02x}{dominant[2]:02x}",
             "count": dominant_count,
-        },
-        "expected": {
-            "rgb": list(expected_rgb),
-            "hex": f"#{expected_rgb[0]:02x}{expected_rgb[1]:02x}{expected_rgb[2]:02x}",
         },
         "deviation": list(deviation),
         "max_deviation": max(deviation),
         "distinct_colors": distinct,
         "uniformity": round(uniformity * 100, 2),
         "passed": max(deviation) <= 2 and uniformity >= 0.99,
+    }
+
+
+def _analyze(frame_path: Path, expected_rgb: tuple[int, int, int]) -> dict:
+    """Amostra regiões de fundo (cantos) e escolhe a mais uniforme/próxima."""
+    try:
+        from PIL import Image
+    except ImportError as exc:
+        raise RuntimeError(f"PIL não disponível: {exc}")
+
+    img = Image.open(frame_path)
+    width, height = img.size
+
+    # Amostra quatro cantos para evitar objetos no centro
+    sample_w = min(200, width // 4)
+    sample_h = min(150, height // 4)
+    regions = [
+        (0, 0, sample_w, sample_h),  # canto superior esquerdo
+        (width - sample_w, 0, width, sample_h),  # superior direito
+        (0, height - sample_h, sample_w, height),  # inferior esquerdo
+        (width - sample_w, height - sample_h, width, height),  # inferior direito
+    ]
+
+    best: dict | None = None
+    best_score = float("inf")
+    for left, top, right, bottom in regions:
+        region = img.crop((left, top, right, bottom))
+        pixels = list(region.get_flattened_data())
+        stats = _analyze_region(pixels, expected_rgb)
+        stats["sample_region"] = {
+            "left": left,
+            "top": top,
+            "width": right - left,
+            "height": bottom - top,
+        }
+        # Queremos baixo desvio E alta uniformidade
+        score = stats["max_deviation"] + (100 - stats["uniformity"])
+        if best is None or score < best_score:
+            best = stats
+            best_score = score
+
+    if best is None:
+        raise RuntimeError("nenhuma região pôde ser analisada")
+
+    return {
+        "frame_size": {"width": width, "height": height},
+        "sample_region": best["sample_region"],
+        "dominant": best["dominant"],
+        "expected": {
+            "rgb": list(expected_rgb),
+            "hex": f"#{expected_rgb[0]:02x}{expected_rgb[1]:02x}{expected_rgb[2]:02x}",
+        },
+        "deviation": best["deviation"],
+        "max_deviation": best["max_deviation"],
+        "distinct_colors": best["distinct_colors"],
+        "uniformity": best["uniformity"],
+        "passed": best["passed"],
     }
 
 
